@@ -23,11 +23,12 @@ table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:7px 4px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .result{font-size:18px;font-weight:bold;margin-top:10px}
-.warn{color:#a15c00;font-size:13px}
 </style>
 </head>
+
 <body>
 <div class="wrap">
+
 <h1>Meine Schicht</h1>
 <div class="sub">Einmal drücken – Datum und Uhrzeit werden dauerhaft gespeichert.</div>
 
@@ -35,6 +36,483 @@ th,td{padding:7px 4px;border-bottom:1px solid #eee;text-align:left;vertical-alig
 <label>Startort</label>
 <select id="start">
 <option>Hauptwohnung</option>
+<option>Zweitwohnung Arbeit</option>
+<option>Sonstiger Startort</option>
+</select>
+
+<label>Sonstiger Startort (optional)</label>
+<input id="startOther" placeholder="z. B. Hotel / Parkplatz">
+
+<label>KM-Stand bei Abfahrt</label>
+<input id="kmStart" class="km" inputmode="numeric" type="number" placeholder="z. B. 124580">
+</div>
+
+<div class="card">
+<label>Einsatzort</label>
+<div class="sub" style="margin:0">Wird bei „ANGEKOMMEN“ abgefragt.</div>
+</div>
+
+<div class="card">
+<div class="grid">
+<button class="b1" onclick="stamp('Abfahrt',true)">🚗<br>ABFAHRT</button>
+<button class="b2" onclick="stamp('Ankunft Einsatzort',false)">📍<br>ANGEKOMMEN</button>
+<button class="b3" onclick="stamp('Arbeitsende / Abfahrt',false)">🚗<br>ARBEITSENDE</button>
+<button class="b4" onclick="stamp('Ankunft Ziel',true)">🏠<br>ZUHAUSE</button>
+</div>
+</div>
+
+<div class="card">
+<label>Ziel nach dem Einsatz</label>
+<select id="ziel">
+<option>Hauptwohnung</option>
+<option>Zweitwohnung Arbeit</option>
+<option>Sonstiger Zielort</option>
+</select>
+
+<label>Sonstiger Zielort (optional)</label>
+<input id="zielOther" placeholder="z. B. Hotel / Parkplatz">
+
+<label>KM-Stand bei Rückkehr</label>
+<input id="kmEnd" class="km" inputmode="numeric" type="number" placeholder="z. B. 124742">
+
+<div id="kmResult" class="result"></div>
+</div>
+
+<div class="card">
+<label>Bemerkung</label>
+<textarea id="bem" placeholder="z. B. Wartezeit, Personalwechsel, Übergabe/Übernahme ..."></textarea>
+
+<div class="actions">
+<button class="small" onclick="saveNote()">Bemerkung speichern</button>
+<button class="small" onclick="newDay()">Neuen Tag beginnen</button>
+<button class="small" onclick="exportPDF()">📄 PDF-Bericht erstellen</button>
+</div>
+</div>
+
+<div class="card">
+<div class="status">
+<b>Heute</b>
+<div id="today">Noch keine Erfassung.</div>
+</div>
+</div>
+
+<div class="card">
+<b>Gespeicherte Erfassungen</b>
+
+<div style="overflow:auto;margin-top:8px">
+<table>
+<thead>
+<tr>
+<th>Datum</th>
+<th>Vorgang</th>
+<th>Zeit</th>
+<th>Ort / KM</th>
+</tr>
+</thead>
+
+<tbody id="history"></tbody>
+</table>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2 style="margin-top:0">Datenverwaltung</h2>
+<button class="small" onclick="deleteAllData()">🗑️ Daten löschen</button>
+</div>
+
+</div>
+
+<script>
+const KEY='meine_schicht_v2';
+
+function data(){
+ try{
+  return JSON.parse(localStorage.getItem(KEY)||'[]')
+ }catch(e){
+  return[]
+ }
+}
+
+function save(d){
+ localStorage.setItem(KEY,JSON.stringify(d))
+}
+
+function now(){
+ const d=new Date(),p=n=>String(n).padStart(2,'0');
+
+ return{
+  date:`${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`,
+  time:`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+ }
+}
+
+function selected(id,otherId){
+ const v=document.getElementById(id).value;
+
+ return v==='Sonstiger Startort'||v==='Sonstiger Zielort'
+  ?(document.getElementById(otherId).value.trim()||v)
+  :v
+}
+
+function stamp(type,needsKM){
+
+ const n=now(),d=data();
+ let ort='';
+
+ if(type==='Abfahrt'){
+
+  const km=document.getElementById('kmStart').value;
+
+  if(!km){
+   alert('Bitte zuerst den KM-Stand bei Abfahrt eingeben.');
+   return
+  }
+
+  const startOrt=selected('start','startOther');
+
+  d.push({
+   date:n.date,
+   time:n.time,
+   type,
+   ort:'',
+   start:startOrt,
+   ziel:'',
+   kmStart:km,
+   kmEnd:'',
+   gefahren:'',
+   note:''
+  });
+
+ }else if(type==='Ankunft Einsatzort'){
+
+  ort=prompt('Einsatzort eingeben:','');
+
+  if(!ort||!ort.trim()){
+   alert('Bitte den Einsatzort eingeben.');
+   return
+  }
+
+  d.push({
+   date:n.date,
+   time:n.time,
+   type,
+   ort:ort.trim(),
+   start:'',
+   ziel:'',
+   kmStart:'',
+   kmEnd:'',
+   gefahren:'',
+   note:''
+  });
+
+ }else if(type==='Arbeitsende / Abfahrt'){
+
+  d.push({
+   date:n.date,
+   time:n.time,
+   type,
+   ort,
+   start:'',
+   ziel:'',
+   kmStart:'',
+   kmEnd:'',
+   gefahren:'',
+   note:''
+  });
+
+ }else{
+
+  const km=document.getElementById('kmEnd').value;
+
+  if(!km){
+   alert('Bitte zuerst den KM-Stand bei Rückkehr eingeben.');
+   return
+  }
+
+  const ziel=selected('ziel','zielOther');
+
+  const startRec=[...d].reverse().find(
+   x=>x.type==='Abfahrt'&&x.date===n.date
+  );
+
+  const kmStart=startRec?Number(startRec.kmStart):null;
+
+  const gefahren=kmStart!==null
+   ?Number(km)-kmStart
+   :null;
+
+  if(gefahren!==null&&gefahren<0){
+   alert('Der Rückkehr-KM-Stand ist kleiner als der Start-KM-Stand. Bitte prüfen.');
+   return
+  }
+
+  d.push({
+   date:n.date,
+   time:n.time,
+   type,
+   ort:'',
+   start:'',
+   ziel,
+   kmStart:kmStart??'',
+   kmEnd:km,
+   gefahren:gefahren??'',
+   note:''
+  });
+
+  document.getElementById('kmResult').textContent=
+   gefahren!==null
+   ?'Gefahrene Kilometer: '+gefahren+' km'
+   :'';
+ }
+
+ save(d);
+ render();
+ navigator.vibrate?.(80);
+}
+
+function saveNote(){
+
+ const note=document.getElementById('bem').value.trim();
+ const d=data();
+ const last=d[d.length-1];
+
+ if(!note){
+  alert('Bitte zuerst eine Bemerkung eingeben.');
+  return
+ }
+
+ if(!last){
+  alert('Noch keine Erfassung vorhanden.');
+  return
+ }
+
+ last.note=note;
+
+ save(d);
+
+ document.getElementById('bem').value='';
+
+ render();
+
+ alert('Bemerkung gespeichert.');
+}
+
+function newDay(){
+
+ ['startOther','zielOther','kmStart','kmEnd','bem']
+ .forEach(id=>document.getElementById(id).value='');
+
+ document.getElementById('kmResult').textContent='';
+
+ alert('Neuer Tag bereit. Die bisherigen Daten bleiben gespeichert.');
+}
+
+function deleteAllData(){
+
+ const ok=confirm(
+  "Daten löschen?\n\nAlle gespeicherten Schicht- und Erfassungsdaten werden unwiderruflich gelöscht."
+ );
+
+ if(!ok)return;
+
+ localStorage.removeItem(KEY);
+
+ document.getElementById('kmResult').textContent='';
+ document.getElementById('bem').value='';
+
+ render();
+
+ alert('Alle gespeicherten Daten wurden gelöscht.');
+}
+
+function render(){
+
+ const d=data();
+ const today=now().date;
+ const td=d.filter(x=>x.date===today);
+
+ document.getElementById('today').innerHTML=
+ td.length
+ ?td.map(x=>
+  `${x.time} – ${x.type}`+
+  `${x.ort?' – '+esc(x.ort):''}`+
+  `${x.start?' – Start: '+esc(x.start):''}`+
+  `${x.ziel?' – Ziel: '+esc(x.ziel):''}`+
+  `${x.kmEnd?' – KM: '+esc(x.kmEnd):''}`
+ ).join('<br>')
+ :'Noch keine Erfassung.';
+
+ document.getElementById('history').innerHTML=
+ d.slice().reverse().map(x=>
+ `<tr>
+  <td>${x.date}</td>
+  <td>${x.type}${x.note?'<br><small>'+esc(x.note)+'</small>':''}</td>
+  <td>${x.time}</td>
+  <td>
+   ${esc(x.ort||'')}
+   ${x.start?'<br>Start: '+esc(x.start):''}
+   ${x.ziel?'<br>Ziel: '+esc(x.ziel):''}
+   ${x.kmStart?'<br>KM Start: '+x.kmStart:''}
+   ${x.kmEnd?'<br>KM Ende: '+x.kmEnd:''}
+   ${x.gefahren!==undefined&&x.gefahren!==''?'<br><b>'+x.gefahren+' km</b>':''}
+  </td>
+ </tr>`
+ ).join('')
+ ||'<tr><td colspan="4">Noch nichts gespeichert.</td></tr>';
+}
+
+function esc(s){
+ return String(s).replace(
+  /[&<>"']/g,
+  m=>({
+   '&':'&amp;',
+   '<':'&lt;',
+   '>':'&gt;',
+   '"':'&quot;',
+   "'":'&#39;'
+  }[m])
+ )
+}
+
+function exportPDF(){
+
+ const d=data();
+
+ if(!d.length){
+  alert('Noch keine Daten zum PDF-Exportieren.');
+  return
+ }
+
+ const rows=d.slice().reverse().map(x=>`
+   <tr>
+    <td>${esc(x.date)}</td>
+    <td>${esc(x.time)}</td>
+    <td>${esc(x.type)}</td>
+    <td>${esc(x.ort||'')}</td>
+    <td>${esc(x.start||'')}</td>
+    <td>${esc(x.ziel||'')}</td>
+    <td>${esc(x.kmStart||'')}</td>
+    <td>${esc(x.kmEnd||'')}</td>
+    <td>${esc(x.gefahren??'')}</td>
+    <td>${esc(x.note||'')}</td>
+   </tr>`
+ ).join('');
+
+ const w=window.open('','_blank');
+
+ if(!w){
+  alert('Das PDF-Fenster wurde vom Browser blockiert. Bitte Pop-ups für diese App erlauben.');
+  return
+ }
+
+ w.document.write(`<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Meine Schicht – Bericht</title>
+
+<style>
+body{
+ font-family:Arial,sans-serif;
+ color:#17202a;
+ margin:25px
+}
+
+h1{
+ margin-bottom:4px
+}
+
+p{
+ color:#667085
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ font-size:10px
+}
+
+th,td{
+ border:1px solid #bbb;
+ padding:5px;
+ text-align:left;
+ vertical-align:top
+}
+
+th{
+ font-weight:bold
+}
+
+@media print{
+ @page{
+  size:A4 landscape;
+  margin:12mm
+ }
+
+ button{
+  display:none
+ }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Meine Schicht – Arbeitsbericht</h1>
+
+<p>
+Erstellt am ${esc(now().date)}
+um ${esc(now().time)}
+</p>
+
+<table>
+
+<thead>
+<tr>
+<th>Datum</th>
+<th>Uhrzeit</th>
+<th>Vorgang</th>
+<th>Einsatzort</th>
+<th>Startort</th>
+<th>Zielort</th>
+<th>KM Start</th>
+<th>KM Ende</th>
+<th>Gefahrene KM</th>
+<th>Bemerkung</th>
+</tr>
+</thead>
+
+<tbody>
+${rows}
+</tbody>
+
+</table>
+
+<br>
+
+<button onclick="window.print()">
+📄 Drucken / Als PDF speichern
+</button>
+
+</body>
+</html>`);
+
+ w.document.close();
+}
+
+render();
+</script>
+
+<script>
+if("serviceWorker" in navigator){
+ navigator.serviceWorker
+ .register("./service-worker.js")
+ .catch(()=>{});
+}
+</script>
+
+</body>
+</html><option>Hauptwohnung</option>
 <option>Zweitwohnung Arbeit</option>
 <option>Sonstiger Startort</option>
 </select>
