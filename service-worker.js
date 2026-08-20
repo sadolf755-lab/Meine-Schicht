@@ -1,4 +1,4 @@
-const CACHE = 'meine-schicht-v3';
+const CACHE = 'meine-schicht-v5';
 
 const ASSETS = [
   './index.html',
@@ -20,10 +20,10 @@ self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.map(function(key) {
-          if (key !== CACHE) {
-            return caches.delete(key);
-          }
+        keys.filter(function(key) {
+          return key !== CACHE;
+        }).map(function(key) {
+          return caches.delete(key);
         })
       );
     }).then(function() {
@@ -35,6 +35,20 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   event.respondWith(
     fetch(event.request).then(function(response) {
+
+      var copy = response.clone();
+
+      caches.open(CACHE).then(function(cache) {
+        cache.put(event.request, copy);
+      });
+
+      return response;
+
+    }).catch(function() {
+      return caches.match(event.request);
+    })
+  );
+});    fetch(event.request).then(function(response) {
       var copy = response.clone();
 
       caches.open(CACHE).then(function(cache) {
