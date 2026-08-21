@@ -1,4 +1,4 @@
-const CACHE = 'meine-schicht-v5';
+const CACHE = 'meine-schicht-v6';
 
 const ASSETS = [
   './index.html',
@@ -6,35 +6,41 @@ const ASSETS = [
   './icon.svg'
 ];
 
-self.addEventListener('install', function(event) {
+self.addEventListener('install', event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open(CACHE).then(function(cache) {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
   );
 });
 
-self.addEventListener('activate', function(event) {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(
-        keys.filter(function(key) {
-          return key !== CACHE;
-        }).map(function(key) {
-          return caches.delete(key);
-        })
-      );
-    }).then(function() {
-      return self.clients.claim();
-    })
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE)
+          .map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', function(event) {
+self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request).then(function(response) {
+    fetch(event.request)
+      .then(response => {
+        const copy = response.clone();
+
+        caches.open(CACHE).then(cache => {
+          cache.put(event.request, copy);
+        });
+
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
+});    fetch(event.request).then(function(response) {
 
       var copy = response.clone();
 
