@@ -2,7 +2,7 @@
 body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wrap{max-width:620px;margin:auto;padding:16px}.app-header{display:flex;align-items:center;gap:12px;margin-bottom:4px}.app-logo{width:100px;height:100px;object-fit:contain;flex-shrink:0}.app-title h1{margin:4px 0}.app-title .sub{color:#667085;margin-bottom:14px}.card{background:#fff;border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 2px 10px #0001}button,input,select,textarea{font:inherit}button{border:0;border-radius:13px;padding:14px 10px;font-weight:700}.wide{width:100%;background:#dceeff;text-align:left;font-size:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.role{min-height:82px}.az{background:#e7eef5}.sak{background:#fff0b8}.buep{background:#e3f0e8}.sipo{background:#e7e7e7}.green{background:#d9f7df}.blue{background:#dceeff}.yellow{background:#fff0c9}.red{background:#ffdcdc}.small{padding:10px;background:#e9ecef}input,select,textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid #d9dee5;border-radius:10px;background:#fff;margin-bottom:7px}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hidden{display:none}.muted{color:#667085;font-size:14px}.item{border:1px solid #d9dee5;border-radius:12px;padding:11px;margin:8px 0}.event{border-left:4px solid #1f4e78;background:#f8fafc;padding:8px;margin:6px 0;border-radius:7px}.danger{background:#ffdcdc}.planrow{border:1px solid #d9dee5;border-radius:11px;padding:9px 10px;margin:7px 0}.planmain{font-size:16px;font-weight:700}.plansub{color:#667085;font-size:14px;margin-top:2px}.planactions{margin-top:6px}.planactions button{padding:7px 10px;font-size:14px}.checkgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:8px 0}.checkgrid label{font-weight:600;background:#f2f4f7;border-radius:9px;padding:8px;margin:0}.settings{background:#eef2f6}
 </style></head><body><div class="wrap"><div class="app-header"><img src="meine-schicht-icon-192.png" alt="Meine Schicht" class="app-logo"><div class="app-title"><h1>Meine Schicht</h1><div class="sub">Wenig Eingaben – möglichst vollständige Dokumentation.</div></div></div>
 <section id="home"><button class="wide" onclick="show('plan')">📅 Einsätze KW <span id="kw"></span></button><div class="card"><div class="grid"><button class="role az" onclick="openRole('AZF./RbBau')">🚂<br>AZF. / RbBau</button><button class="role sak" onclick="openRole('SAKRA')">🦺<br>SAKRA</button><button class="role buep" onclick="openRole('BüP')">🚧<br>BüP</button><button class="role sipo" onclick="openRole('Sipo')">🦺<br>Sipo</button></div></div>
-<div class="card"><h2>Fahrt & Schicht</h2><div class="grid"><button class="green" onclick="departure()">🚗<br>ABFAHRT</button><button class="blue" onclick="arrive()">📍<br>ANGEKOMMEN</button><button class="yellow" onclick="beginShift()">▶️<br>SCHICHT BEGINNEN</button><button class="red" onclick="simpleEvent('Schichtende')">🛑<br>SCHICHT ENDE</button></div><hr><label>Startort</label><select id="start"><option>Hauptwohnung</option><option>Zweitwohnung Arbeit</option><option>Sonstiger Startort</option></select><input id="startOther" placeholder="Sonstiger Startort"><label>KM bei Abfahrt</label><input id="kmStart" type="number"><label>Einsatzort</label><input id="ort" placeholder="wird bei ANGEKOMMEN abgefragt"><label>KM bei Zuhause</label><input id="kmEnd" type="number"><button class="small" onclick="homeArrival()">🏠 ZUHAUSE</button></div>
+<div class="card"><h2>Fahrt & Schicht</h2><div class="grid"><button class="green" onclick="departure()">🚗<br>ABFAHRT</button><button class="blue" onclick="arrive()">📍<br>ANGEKOMMEN</button><button class="yellow" onclick="beginShift()">▶️<br>SCHICHT BEGINNEN</button><button class="red" onclick="simpleEvent('Schichtende')">🛑<br>SCHICHT ENDE</button></div><hr><label>Startort</label><select id="start"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option><option>Sonstiger Startort</option></select><input id="startOther" placeholder="Sonstiger Startort"><label>KM bei Abfahrt</label><input id="kmStart" type="number"><label>Ziel / Ankunft</label><select id="arrivalType" onchange="arrivalFields()"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option></select><div id="arrivalExtra"></div><label>KM bei Ankunft (nur Wohnsitz / Unterkunft)</label><input id="kmEnd" type="number"><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div></section>
 <section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
 <div class="card"><div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:12px"><button class="small" onclick="changePlanWeek(-1)">◀️ Vorherige KW</button><h2 style="text-align:center;margin:0;white-space:nowrap">📅 Einsätze KW <span id="kw2"></span></h2><button class="small" onclick="changePlanWeek(1)">Nächste KW ▶️</button></div>
@@ -49,7 +49,24 @@ function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employ
 function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
 function simpleEvent(type){add(type)}
 function departure(){let km=document.getElementById('kmStart').value;if(!km)return alert('Bitte KM-Stand bei Abfahrt eingeben.');add('Abfahrt',{start:document.getElementById('start').value,startOther:document.getElementById('startOther').value,kmStart:km})}
-function arrive(){let o=prompt('Einsatzort:',document.getElementById('ort').value||'');if(!o)return;document.getElementById('ort').value=o;add('Angekommen',{ort:o})}
+function arrivalFields(){
+ let t=document.getElementById('arrivalType')?.value;
+ let e=document.getElementById('arrivalExtra');
+ if(!e)return;
+ e.innerHTML=t==='Einsatzort'?'<input id="arrivalOrt" placeholder="Einsatzort">':'';
+}
+function arrive(){
+ let t=document.getElementById('arrivalType')?.value||'Einsatzort';
+ let ort=t==='Einsatzort'?(document.getElementById('arrivalOrt')?.value||prompt('Einsatzort:','')):t;
+ if(!ort)return;
+ if(t!=='Einsatzort'){
+   let km=document.getElementById('kmEnd').value;
+   if(!km)return alert('Bitte KM-Stand bei Ankunft eingeben.');
+   add('Angekommen',{zielart:t,ort,kmEnd:km});
+ }else{
+   add('Angekommen',{zielart:t,ort});
+ }
+}
 function beginShift(){let r=prompt('Funktion:\n1 AZF./RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'AZF./RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
 function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
 function setupRole(){let e=document.getElementById('setup');if(role==='Sipo')e.innerHTML='<label>Zugeordnete SAKRA (optional)</label><input id="sS" placeholder="Name"><button class="small" onclick="saveSetup()">Speichern</button>';else if(role==='SAKRA')e.innerHTML='<label>Sipo dabei (optional)</label><input id="sS"><label>Einsatzbereich</label><select id="sA" onchange="sakFields()"><option value="">Bitte wählen</option><option>Bahnhof</option><option>Strecke</option><option>Bahnübergang</option></select><div id="sF"></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else if(role==='BüP')e.innerHTML='<label>BÜ / Bezeichnung</label><input id="bN"><label>Strecke</label><input id="bS"><label>km</label><input id="bK"><div class="row"><div><label>Fahrdienst 1</label><input id="f1"></div><div><label>Fahrdienst 2 optional</label><input id="f2"></div></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else e.innerHTML='<div class="muted">Rangier- und Baustellendokumentation.</div>'}
@@ -114,7 +131,13 @@ function renderPlans(){
    return `<div class="planrow"><div class="planmain">${days[dt.getDay()]} · ${esc(p.date)} · ${esc(p.time)}</div><div class="plansub">${esc(p.role)}${p.ort?' · '+esc(p.ort):''}${p.auftraggeber?' · '+esc(p.auftraggeber):''}</div><div class="planactions"><button class="small" onclick="editPlan(${p.id})">✏️ Ändern</button> <button class="small danger" onclick="delPlan(${p.id})">🗑️</button></div></div>`
  }).join(''):'Noch keine Einsätze geplant.'
 }
-function homeArrival(){let km=document.getElementById('kmEnd').value;if(!km)return alert('Bitte KM-Stand bei Zuhause eingeben.');add('Zuhause',{kmEnd:km})}
+function homeArrival(){
+ let t=document.getElementById('arrivalType')?.value||'Wohnsitz';
+ let km=document.getElementById('kmEnd').value;
+ if(t==='Einsatzort')return alert('Am Einsatzort bitte ANGEKOMMEN verwenden.');
+ if(!km)return alert('Bitte KM-Stand bei Ankunft eingeben.');
+ add('Ankunft / Tagesabschluss',{zielart:t,kmEnd:km});
+}
 function exportPDF(){
  let a=get().filter(x=>x.kind==='event');if(!a.length)return alert('Noch keine Daten.');
  let s=getSettings();
@@ -134,5 +157,5 @@ function clearData(){
  render();
  renderPlans();
  alert('Erfassungsdaten wurden gelöscht. Deine Einsätze bleiben erhalten.');
-}render();
+}arrivalFields();render();
 </script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});</script></body></html>
