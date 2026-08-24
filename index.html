@@ -1223,6 +1223,1170 @@ selectRole=function(){
 
 </script>
 </body>
+</html>
+<div class="card">
+<div class="kw-nav">
+<button onclick="changeWeek(-1)">‹</button>
+<div class="kw-title" id="kwTitle">KW</div>
+<button onclick="changeWeek(1)">›</button>
+</div>
+<div id="weekPlan" class="plan-grid"></div>
+</div>
+
+<div class="card">
+<button class="wide" onclick="selectRole()">👷 Funktion / Einsatz auswählen</button>
+<div id="roleArea"></div>
+</div>
+
+<div class="card">
+<h3>📋 Ereignisse</h3>
+<div id="events"></div>
+</div>
+
+<div class="card">
+<button class="small" onclick="makePDF()">📄 PDF erstellen</button>
+<button class="small danger" onclick="clearAllData()">🗑️ Daten löschen</button>
+</div>
+
+</div>
+
+<script>
+const KEY='meine_schicht_v3';
+const RANGIER_KEY='meine_schicht_aktiver_rangier_v1';
+
+let role='';
+let planWeekOffset=0;
+
+function now(){
+ return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function today(){
+ return new Date().toISOString().slice(0,10);
+}
+
+function esc(v){
+ return String(v??'').replace(/[&<>"']/g,m=>({
+  '&':'&amp;',
+  '<':'&lt;',
+  '>':'&gt;',
+  '"':'&quot;',
+  "'":'&#039;'
+ }[m]));
+}
+
+function load(){
+ try{
+  return JSON.parse(localStorage.getItem(KEY)||'[]');
+ }catch(e){
+  return [];
+ }
+}
+
+function save(a){
+ localStorage.setItem(KEY,JSON.stringify(a));
+}
+
+function add(type,data={}){
+ let a=load();
+
+ a.push({
+  date:today(),
+  time:now(),
+  type,
+  ...data
+ });
+
+ save(a);
+ renderEvents();
+}
+
+function getActiveRangier(){
+ try{
+  return JSON.parse(localStorage.getItem(RANGIER_KEY)||'null');
+ }catch(e){
+  return null;
+ }
+}
+
+function setActiveRangier(x){
+ if(x){
+  localStorage.setItem(RANGIER_KEY,JSON.stringify(x));
+ }else{
+  localStorage.removeItem(RANGIER_KEY);
+ }
+}
+
+function clearAllData(){
+ if(!confirm('Alle gespeicherten Schichtdaten wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.'))return;
+
+ localStorage.removeItem(KEY);
+ setActiveRangier(null);
+ render();
+}
+
+function getShiftEvents(){
+ let all=load();
+
+ if(!all.length)return [];
+
+ let hasStart=all.some(x=>x.type==='Schichtbeginn');
+ let hasEnd=all.some(x=>x.type==='Schichtende');
+
+ /*
+   Wenn eine Schicht läuft, zeigen wir ab dem letzten
+   Schichtbeginn alle Ereignisse an – auch über Mitternacht.
+ */
+ if(hasStart && !hasEnd){
+  let starts=all.filter(x=>x.type==='Schichtbeginn');
+  let s=starts[starts.length-1];
+  let startIndex=all.lastIndexOf(s);
+  return all.slice(startIndex);
+ }
+
+ return all.filter(x=>x.date===today());
+}
+
+function renderEvents(){
+ let e=document.getElementById('events');
+ let a=getShiftEvents();
+
+ e.innerHTML=a.length
+ ? a.slice().reverse().map(x=>
+ `<div class="event">
+  <b>${esc(x.date)} ${esc(x.time)}</b> – ${esc(x.type)}
+  ${x.fahrart?' – '+esc(x.fahrart):''}
+  ${x.detail?' – '+esc(x.detail):''}
+  ${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}
+ </div>`
+ ).join('')
+ :'Noch keine Ereignisse.';
+}
+
+function selectRole(){
+ let v=prompt(
+ `Funktion auswählen:
+
+1 = AZF / RbBau
+2 = SAKRA
+3 = BüP`
+ );
+
+ if(v==='1')role='AZF/RbBau';
+ else if(v==='2')role='SAKRA';
+ else if(v==='3')role='BüP';
+ else return;
+
+ renderRole();
+}
+
+function renderRole(){
+ let e=document.getElementById('roleArea');
+
+ if(role==='AZF/RbBau'){
+
+  let active=getActiveRangier();
+
+  let r=active
+  ? `
+   <button class="small" onclick="continueMove()">▶️ Weiter</button>
+   <button class="small" onclick="holdMove()">⏸ Halten / Warten</button>
+   <button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>
+  `
+  : `
+   <button class="small" onclick="move()">🚂 Rangieren</button>
+  `;
+
+  e.innerHTML=`
+  <div class="grid">
+   ${r}
+
+   <button class="small" onclick="add('Ankuppeln')">
+    🔗 Ankuppeln
+   </button>
+
+   <button class="small" onclick="add('Abkuppeln')">
+    🔓 Abkuppeln
+   </button>
+
+   <button class="small" onclick="add('Zug neu zusammengestellt')">
+    🔄 Neu zusammengestellt
+   </button>
+
+   <button class="small" onclick="add('Bremsprobe durchgeführt')">
+    🛑 Bremsprobe
+   </button>
+
+   <button class="small" onclick="add('Wagenliste erstellt')">
+    📋 Wagenliste
+   </button>
+
+   <button class="small" onclick="secureWagons()">
+    🚂 Wagen gesichert
+   </button>
+
+   <button class="small" onclick="parkVehicle()">
+    🅿️ Wagen / Lok abgestellt
+   </button>
+
+   <button class="small" onclick="loadUnload()">
+    📦 Laden / Entladen
+   </button>
+
+   <button class="small" onclick="holdMove()">
+    ⏸ Halten / Warten
+   </button>
+
+   <button class="small" onclick="add('Störung')">
+    ⚠️ Störung
+   </button>
+
+   <button class="small" onclick="add('Zug fertig')">
+    ✅ Zug fertig
+   </button>
+  </div>
+  `;
+
+  if(active){
+   e.innerHTML+=`
+   <div class="item">
+    <b>Aktiver Rangiervorgang:</b>
+    ${esc(active.von)} → ${esc(active.nach)}
+    · ${esc(active.fahrart)}
+   </div>`;
+  }
+
+ }else if(role==='SAKRA'){
+
+  e.innerHTML=`
+  <div class="grid">
+
+   <button class="small" onclick="add('SAKRA Beginn')">
+    🟡 SAKRA Beginn
+   </button>
+
+   <button class="small" onclick="add('SAKRA Ende')">
+    🟢 SAKRA Ende
+   </button>
+
+   <button class="small" onclick="detail('SAKRA','Grund')">
+    📝 SAKRA Eintrag
+   </button>
+
+  </div>
+  `;
+
+ }else if(role==='BüP'){
+
+  e.innerHTML=`
+  <div class="grid">
+
+   <button class="small" onclick="buepMeldung()">
+    🚦 Zugmeldung
+   </button>
+
+   <button class="small" onclick="buepSichern()">
+    🦺 Sichern
+   </button>
+
+   <button class="small" onclick="add('BüP Ende')">
+    🛑 BüP Ende
+   </button>
+
+  </div>
+  `;
+
+ }else{
+
+  e.innerHTML=
+  '<div class="muted">Bitte Funktion auswählen.</div>';
+
+ }
+
+ renderEvents();
+}
+
+function chooseRangierart(){
+
+ let v=prompt(
+ `Rangierart:
+
+1 = Geschoben
+2 = Gezogen`,
+ '1'
+ );
+
+ if(v==='1')return 'geschoben';
+ if(v==='2')return 'gezogen';
+
+ return null;
+}
+
+function move(){
+
+ let v=prompt('Von:','');
+
+ if(v===null || !v.trim())return;
+
+ let n=prompt('Nach:','');
+
+ if(n===null || !n.trim())return;
+
+ let fahrart=chooseRangierart();
+
+ if(!fahrart)return;
+
+ let active={
+  von:v.trim(),
+  nach:n.trim(),
+  fahrart,
+  startedAt:now()
+ };
+
+ setActiveRangier(active);
+
+ add('Rangieren',{
+  von:active.von,
+  nach:active.nach,
+  fahrart:active.fahrart
+ });
+
+ renderRole();
+}
+
+function holdMove(){
+
+ let active=getActiveRangier();
+
+ if(!active){
+  return alert(
+   'Kein aktiver Rangiervorgang. Bitte zuerst Rangieren starten.'
+  );
+ }
+
+ let v=prompt(
+ `Halten / Warten:
+
+1 = Zug / Fahrzeug
+2 = Mitarbeiter im Gleisbereich
+3 = Warten auf Zustimmung
+4 = Störung
+5 = Sonstiges`,
+ '3'
+ );
+
+ let m={
+  '1':'Zug / Fahrzeug',
+  '2':'Mitarbeiter im Gleisbereich',
+  '3':'Warten auf Zustimmung',
+  '4':'Störung'
+ };
+
+ if(v==='5'){
+
+  let d=prompt('Sonstiges:','');
+
+  if(d===null || !d.trim())return;
+
+  add('Halten / Warten',{
+   detail:'Sonstiges – '+d.trim(),
+   rangierVorgang:active.von+' → '+active.nach
+  });
+
+ }else if(m[v]){
+
+  add('Halten / Warten',{
+   detail:m[v],
+   rangierVorgang:active.von+' → '+active.nach
+  });
+
+ }else{
+  return;
+ }
+
+ renderRole();
+}
+
+function continueMove(){
+
+ let active=getActiveRangier();
+
+ if(!active){
+  return alert('Kein aktiver Rangiervorgang.');
+ }
+
+ let choice=prompt(
+ 'Rangiervorgang fortsetzen\n'+
+ 'Aktuell: '+active.von+' → '+active.nach+
+ '\n\n'+
+ '1 = '+active.von+
+ '\n2 = '+active.nach+
+ '\n3 = Neue Angabe',
+ '2'
+ );
+
+ if(choice===null)return;
+
+ let start;
+
+ if(choice==='1'){
+  start=active.von;
+ }else if(choice==='2'){
+  start=active.nach;
+ }else if(choice==='3'){
+
+  start=prompt('Weiter ab:','');
+
+  if(start===null || !start.trim())return;
+
+  start=start.trim();
+
+ }else{
+  return;
+ }
+
+ let target=prompt('Weiter nach:','');
+
+ if(target===null || !target.trim())return;
+
+ let next={
+  von:start,
+  nach:target.trim(),
+  fahrart:active.fahrart,
+  startedAt:active.startedAt
+ };
+
+ add('Rangieren',{
+  von:next.von,
+  nach:next.nach,
+  fahrart:next.fahrart
+ });
+
+ setActiveRangier(next);
+
+ renderRole();
+}
+
+function endMove(){
+
+ let active=getActiveRangier();
+
+ if(!active)return;
+
+ add('Rangiervorgang beendet',{
+  detail:
+   active.von+
+   ' → '+
+   active.nach+
+   ' · '+
+   active.fahrart
+ });
+
+ setActiveRangier(null);
+
+ renderRole();
+}
+
+function secureWagons(){
+
+ let v=prompt(
+ `Wagen gesichert:
+
+1 = Handbremse
+2 = Hemmschuhe`,
+ '1'
+ );
+
+ if(v==='1'){
+  add('Wagen gesichert',{detail:'Handbremse'});
+ }else if(v==='2'){
+  add('Wagen gesichert',{detail:'Hemmschuhe'});
+ }
+}
+
+function parkVehicle(){
+
+ let gleis=prompt('Gleis:','');
+
+ if(gleis===null || !gleis.trim())return;
+
+ add('Wagen / Lok abgestellt',{
+  detail:'Gleis '+gleis.trim()
+ });
+}
+
+function loadUnload(){
+
+ let v=prompt(
+ `Laden / Entladen:
+
+1 = Laden
+2 = Entladen`,
+ '1'
+ );
+
+ if(v==='1'){
+  add('Laden');
+ }else if(v==='2'){
+  add('Entladen');
+ }
+}
+
+function detail(type,label){
+
+ let d=prompt(label+':','');
+
+ if(d===null || !d.trim())return;
+
+ add(type,{detail:d.trim()});
+}
+
+function buepMeldung(){
+
+ let v=prompt(
+ `Zugmeldung:
+
+1 = Zugmeldung erhalten
+2 = Zugmeldung beendet`,
+ '1'
+ );
+
+ if(v==='1'){
+  add('BüP Zugmeldung');
+ }else if(v==='2'){
+  add('BüP Zugmeldung beendet');
+ }
+}
+
+function buepSichern(){
+
+ let v=prompt(
+ `Sicherung:
+
+1 = Sofort sichern
+2 = Zeit`,
+ '1'
+ );
+
+ if(v==='1'){
+
+  add('BüP Sicherung',{
+   detail:'Sofort sichern'
+  });
+
+ }else if(v==='2'){
+
+  let min=prompt(
+   'Zeit in Minuten:',
+   '3'
+  );
+
+  if(min===null || !min.trim())return;
+
+  let n=Number(min);
+
+  if(!Number.isFinite(n) || n<=0){
+   return alert('Bitte eine gültige Zeit eingeben.');
+  }
+
+  add('BüP Sicherung',{
+   detail:'Countdown '+n+' Minuten'
+  });
+
+  setTimeout(()=>{
+   alert('🔔 Sicherungszeit abgelaufen!');
+  },n*60000);
+
+ }
+}
+
+function render(){
+
+ renderEvents();
+ renderRole();
+ renderWeek();
+
+}
+
+function changeWeek(n){
+
+ planWeekOffset+=n;
+
+ renderWeek();
+}
+
+function getMonday(d){
+
+ d=new Date(d);
+
+ let day=d.getDay();
+
+ let diff=day===0?-6:1-day;
+
+ d.setDate(d.getDate()+diff);
+
+ d.setHours(0,0,0,0);
+
+ return d;
+}
+
+function renderWeek(){
+
+ let base=getMonday(new Date());
+
+ base.setDate(base.getDate()+planWeekOffset*7);
+
+ let end=new Date(base);
+
+ end.setDate(end.getDate()+6);
+
+ let kw=getISOWeek(base);
+
+ document.getElementById('kwTitle').textContent=
+ 'KW '+kw;
+
+ let names=[
+  'Mo','Di','Mi','Do','Fr','Sa','So'
+ ];
+
+ let html='';
+
+ for(let i=0;i<7;i++){
+
+  let d=new Date(base);
+
+  d.setDate(base.getDate()+i);
+
+  let ds=d.toISOString().slice(0,10);
+
+  html+=`
+  <div class="day">
+   <div class="name">${names[i]}</div>
+   <div class="date">${d.getDate()}.${d.getMonth()+1}.</div>
+   <div class="shift" id="shift-${ds}">–</div>
+  </div>
+  `;
+ }
+
+ document.getElementById('weekPlan').innerHTML=html;
+
+ let all=load();
+
+ for(let i=0;i<7;i++){
+
+  let d=new Date(base);
+
+  d.setDate(base.getDate()+i);
+
+  let ds=d.toISOString().slice(0,10);
+
+  let ev=all.filter(x=>x.date===ds);
+
+  let el=document.getElementById('shift-'+ds);
+
+  if(!el)continue;
+
+  let start=ev.find(x=>x.type==='Schichtbeginn');
+  let end=ev.find(x=>x.type==='Schichtende');
+
+  if(start && end){
+   el.textContent=
+    start.time+'–'+end.time;
+  }else if(start){
+   el.textContent=
+    start.time+'–…';
+  }else{
+   el.textContent='–';
+  }
+ }
+}
+
+function getISOWeek(d){
+
+ let date=new Date(
+  Date.UTC(
+   d.getFullYear(),
+   d.getMonth(),
+   d.getDate()
+  )
+ );
+
+ let day=date.getUTCDay()||7;
+
+ date.setUTCDate(
+  date.getUTCDate()+4-day
+ );
+
+ let yearStart=new Date(
+  Date.UTC(
+   date.getUTCFullYear(),
+   0,
+   1
+  )
+ );
+
+ return Math.ceil(
+  (((date-yearStart)/86400000)+1)/7
+ );
+}
+
+/* -----------------------------
+   PDF
+----------------------------- */
+
+function makePDF(){
+
+ let a=getShiftEvents();
+
+ if(!a.length){
+  return alert('Keine Schichtdaten vorhanden.');
+ }
+
+ let first=a[0];
+ let last=a[a.length-1];
+
+ let rows='';
+
+ a.forEach(x=>{
+
+  let detailParts=[];
+
+  if(x.fahrart){
+   detailParts.push(x.fahrart);
+  }
+
+  if(x.detail){
+   detailParts.push(x.detail);
+  }
+
+  if(x.rangierVorgang){
+   detailParts.push(
+    'Rangiervorgang: '+x.rangierVorgang
+   );
+  }
+
+  let movement='';
+
+  if(x.von){
+   movement=
+    esc(x.von)+
+    ' → '+
+    esc(x.nach||'');
+  }
+
+  rows+=`
+  <tr>
+   <td>${esc(x.date)}</td>
+   <td>${esc(x.time)}</td>
+   <td>${esc(x.type)}</td>
+   <td>${detailParts.map(esc).join(' · ')}</td>
+   <td>${movement}</td>
+  </tr>
+  `;
+ });
+
+ /*
+   KM-Berechnung:
+   erster KM-Start und letzter KM-Endstand
+ */
+ let startKm=null;
+ let endKm=null;
+
+ for(let x of a){
+
+  if(
+   startKm===null &&
+   x.kmStart!==undefined
+  ){
+   startKm=Number(x.kmStart);
+  }
+
+  if(
+   x.kmEnd!==undefined
+  ){
+   endKm=Number(x.kmEnd);
+  }
+ }
+
+ let kmGesamt='';
+
+ if(
+  Number.isFinite(startKm) &&
+  Number.isFinite(endKm)
+ ){
+  kmGesamt=
+   (endKm-startKm).toFixed(0)+
+   ' km';
+ }
+
+ let html=`
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Meine Schicht – Tagesbericht</title>
+<style>
+body{
+ font-family:Arial,sans-serif;
+ margin:30px;
+ color:#17202a
+}
+h1{
+ color:#1f4e78
+}
+table{
+ width:100%;
+ border-collapse:collapse;
+ margin-top:20px
+}
+th,td{
+ border:1px solid #aaa;
+ padding:7px;
+ font-size:12px;
+ vertical-align:top
+}
+th{
+ background:#e7eef5
+}
+.summary{
+ background:#f2f4f7;
+ padding:12px;
+ margin:15px 0
+}
+</style>
+</head>
+<body>
+
+<h1>Meine Schicht – Tagesbericht</h1>
+
+<div class="summary">
+<b>Erster Eintrag:</b>
+${esc(first.date)} ${esc(first.time)}
+<br>
+<b>Letzter Eintrag:</b>
+${esc(last.date)} ${esc(last.time)}
+${kmGesamt?'<br><b>Gefahrene Tageskilometer:</b> '+kmGesamt:''}
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Datum</th>
+<th>Zeit</th>
+<th>Vorgang</th>
+<th>Details</th>
+<th>Von / Nach</th>
+</tr>
+</thead>
+<tbody>
+${rows}
+</tbody>
+</table>
+
+</body>
+</html>
+`;
+
+ let w=window.open(
+  '',
+  '_blank'
+ );
+
+ if(!w){
+  return alert(
+   'PDF-Fenster konnte nicht geöffnet werden.'
+  );
+ }
+
+ w.document.write(html);
+ w.document.close();
+
+ setTimeout(()=>{
+  w.print();
+ },500);
+}
+
+/*
+   Schichtbeginn / Schichtende / Fahrten
+*/
+
+function startShift(){
+
+ let km=prompt(
+  'KM-Stand bei Schichtbeginn / Abfahrt:',
+  ''
+ );
+
+ if(km===null || !km.trim())return;
+
+ if(
+  !/^\\d+(?:[.,]\\d+)?$/.test(
+   km.trim()
+  )
+ ){
+  return alert(
+   'Bitte einen gültigen KM-Stand eingeben.'
+  );
+ }
+
+ add('Schichtbeginn',{
+  kmStart:km.trim().replace(',','.')
+ });
+
+}
+
+function endShift(){
+
+ add('Schichtende');
+
+}
+
+function departure(){
+
+ let km=prompt(
+  'KM-Stand bei Abfahrt:',
+  ''
+ );
+
+ if(km===null || !km.trim())return;
+
+ if(
+  !/^\\d+(?:[.,]\\d+)?$/.test(
+   km.trim()
+  )
+ ){
+  return alert(
+   'Bitte einen gültigen KM-Stand eingeben.'
+  );
+ }
+
+ add('Abfahrt',{
+  kmStart:km.trim().replace(',','.')
+ });
+}
+
+function arrive(){
+
+ let t=
+  document.getElementById('arrivalType')?.value
+  ||'Einsatzort';
+
+ let ort=
+  t==='Einsatzort'
+  ?(
+    document.getElementById('arrivalOrt')?.value
+    ||
+    prompt('Einsatzort:','')
+   )
+  :t;
+
+ if(!ort)return;
+
+ add('Angekommen',{
+  zielart:t,
+  ort
+ });
+}
+
+function homeArrival(){
+
+ let t=
+  document.getElementById('arrivalType')?.value
+  ||'Wohnsitz';
+
+ if(t==='Einsatzort'){
+  return alert(
+   'Am Einsatzort bitte ANGEKOMMEN verwenden.'
+  );
+ }
+
+ let km=prompt(
+  'KM-Endstand bei Ankunft / Tagesabschluss:',
+  ''
+ );
+
+ if(
+  km===null ||
+  !km.trim()
+ )return;
+
+ if(
+  !/^\\d+(?:[.,]\\d+)?$/.test(
+   km.trim()
+  )
+ ){
+  return alert(
+   'Bitte einen gültigen KM-Endstand eingeben.'
+  );
+ }
+
+ add('Ankunft / Tagesabschluss',{
+  zielart:t,
+  kmEnd:km.trim().replace(',','.')
+ });
+
+ /*
+   Tagesabschluss:
+   Schichtbericht ist vollständig.
+   PDF-Erstellung kann direkt danach erfolgen.
+ */
+ setTimeout(()=>{
+  makePDF();
+ },300);
+}
+
+/*
+   Zusatzfunktionen für Fahrten
+*/
+
+function departureMenu(){
+
+ let v=prompt(
+ `Fahrt:
+
+1 = Abfahrt
+2 = Angekommen
+3 = Ankunft / Tagesabschluss`,
+ '1'
+ );
+
+ if(v==='1'){
+  departure();
+ }
+
+ else if(v==='2'){
+  showArrivalDialog();
+ }
+
+ else if(v==='3'){
+  homeArrival();
+ }
+}
+
+function showArrivalDialog(){
+
+ let old=document.getElementById('arrivalBox');
+
+ if(old)old.remove();
+
+ let box=document.createElement('div');
+
+ box.id='arrivalBox';
+
+ box.className='card';
+
+ box.innerHTML=`
+ <label>Zielart</label>
+
+ <select id="arrivalType">
+  <option>Einsatzort</option>
+  <option>Wohnsitz</option>
+  <option>Zweitwohnung / Unterkunft</option>
+ </select>
+
+ <label>Ort</label>
+ <input id="arrivalOrt" placeholder="Ort">
+
+ <button class="small" onclick="arrive()">
+  📍 ANGEKOMMEN
+ </button>
+
+ <button class="small" onclick="homeArrival()">
+  🏠 ANKUNFT / TAGESABSCHLUSS
+ </button>
+ `;
+
+ document.querySelector('.wrap').appendChild(box);
+}
+
+function renderTransportButtons(){
+
+ let area=document.getElementById('roleArea');
+
+ if(!area)return;
+
+ area.innerHTML=`
+ <div class="grid">
+
+  <button class="small" onclick="departure()">
+   🚗 ABFAHRT
+  </button>
+
+  <button class="small" onclick="showArrivalDialog()">
+   📍 ANGEKOMMEN
+  </button>
+
+ </div>
+ `;
+}
+
+/*
+   Beim Rollenbereich zusätzliche Schichtbuttons.
+*/
+
+function addShiftButtons(){
+
+ let area=document.getElementById('roleArea');
+
+ if(!area)return;
+
+ area.innerHTML+=`
+ <div class="grid">
+
+  <button class="small" onclick="startShift()">
+   ▶️ SCHICHTBEGINN
+  </button>
+
+  <button class="small" onclick="endShift()">
+   ⏹️ SCHICHTENDE
+  </button>
+
+  <button class="small" onclick="departure()">
+   🚗 ABFAHRT
+  </button>
+
+  <button class="small" onclick="showArrivalDialog()">
+   📍 ANGEKOMMEN
+  </button>
+
+ </div>
+ `;
+}
+
+/*
+   Initialisierung
+*/
+
+render();
+
+/*
+   Wenn eine Rolle gewählt wird, zusätzlich
+   allgemeine Schicht-/Fahrtbuttons anzeigen.
+*/
+
+const originalSelectRole=selectRole;
+
+selectRole=function(){
+
+ let v=prompt(
+ `Funktion auswählen:
+
+1 = AZF / RbBau
+2 = SAKRA
+3 = BüP`,
+ '');
+
+ if(v==='1')role='AZF/RbBau';
+ else if(v==='2')role='SAKRA';
+ else if(v==='3')role='BüP';
+ else return;
+
+ renderRole();
+ addShiftButtons();
+};
+
+</script>
+</body>
 </html>    align-items: center !important;
     gap: 6px !important;
     flex-wrap: nowrap !important;
