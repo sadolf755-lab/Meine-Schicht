@@ -127,7 +127,7 @@ body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wra
 </style>
 <div class="wrap"><div class="app-header"><img src="meine-schicht-icon-192.png" alt="Meine Schicht" class="app-logo"><div class="app-title"><h1>Meine Schicht</h1><div class="sub">Wenig Eingaben – möglichst vollständige Dokumentation.</div></div></div>
 <section id="home"><button class="wide" onclick="show('plan')">📅 Einsätze KW <span id="kw"></span></button><div class="card"><div class="grid"><button class="role az" onclick="openRole('AZF./RbBau')">🚂<br>AZF. / RbBau</button><button class="role sak" onclick="openRole('SAKRA')">🦺<br>SAKRA</button><button class="role buep" onclick="openRole('BüP')">🚧<br>BüP</button><button class="role sipo" onclick="openRole('Sipo')">🦺<br>Sipo</button></div></div>
-<div class="card"><h2>Fahrt & Schicht</h2><div class="grid"><button class="green" onclick="departure()">🚗<br>ABFAHRT</button><button class="blue" onclick="arrive()">📍<br>ANGEKOMMEN</button><button class="yellow" onclick="beginShift()">▶️<br>SCHICHT BEGINNEN</button><button class="red" onclick="simpleEvent('Schichtende')">🛑<br>SCHICHT ENDE</button></div><hr><label>Startort</label><select id="start"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option><option>Sonstiger Startort</option></select><input id="startOther" placeholder="Sonstiger Startort"><div class="muted">KM-Stand wird beim Klick auf ABFAHRT abgefragt.</div><label>Ziel / Ankunft</label><select id="arrivalType" onchange="arrivalFields()"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option></select><div id="arrivalExtra"></div><label>KM bei Ankunft (nur Wohnsitz / Unterkunft)</label><input id="kmEnd" type="number"><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div>
+<div class="card"><h2>Fahrt & Schicht</h2><div class="grid"><button class="green" onclick="departure()">🚗<br>ABFAHRT</button><button class="blue" onclick="arrive()">📍<br>ANGEKOMMEN</button><button class="yellow" onclick="beginShift()">▶️<br>SCHICHT BEGINNEN</button><button class="red" onclick="simpleEvent('Schichtende')">🛑<br>SCHICHT ENDE</button></div><hr><label>Startort</label><select id="start"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option><option>Sonstiger Startort</option></select><input id="startOther" placeholder="Sonstiger Startort"><div class="muted">KM-Stand wird beim Klick auf ABFAHRT abgefragt.</div><label>Ziel / Ankunft</label><select id="arrivalType" onchange="arrivalFields()"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option></select><div id="arrivalExtra"></div><label>KM-Endstand bei Ankunft / Tagesabschluss</label><input id="kmEnd" type="number"><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div></section>
 <section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
 <div class="card">
@@ -194,13 +194,7 @@ function arrive(){
  let t=document.getElementById('arrivalType')?.value||'Einsatzort';
  let ort=t==='Einsatzort'?(document.getElementById('arrivalOrt')?.value||prompt('Einsatzort:','')):t;
  if(!ort)return;
- if(t!=='Einsatzort'){
-   let km=document.getElementById('kmEnd').value;
-   if(!km)return alert('Bitte KM-Stand bei Ankunft eingeben.');
-   add('Angekommen',{zielart:t,ort,kmEnd:km});
- }else{
-   add('Angekommen',{zielart:t,ort});
- }
+ add('Angekommen',{zielart:t,ort});
 }
 function beginShift(){let r=prompt('Funktion:\n1 AZF./RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'AZF./RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
 function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
@@ -287,7 +281,7 @@ function homeArrival(){
  let t=document.getElementById('arrivalType')?.value||'Wohnsitz';
  let km=document.getElementById('kmEnd').value;
  if(t==='Einsatzort')return alert('Am Einsatzort bitte ANGEKOMMEN verwenden.');
- if(!km)return alert('Bitte KM-Stand bei Ankunft eingeben.');
+ if(!km)return alert('Bitte KM-Endstand bei Tagesabschluss eingeben.');
  add('Ankunft / Tagesabschluss',{zielart:t,kmEnd:km});
 }
 function kmNumber(v){let n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null;}
