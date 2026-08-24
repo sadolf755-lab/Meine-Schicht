@@ -1,341 +1,68 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1f4e78"><link rel="manifest" href="./manifest.webmanifest"><title>Meine Schicht</title><style>
-body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wrap{max-width:620px;margin:auto;padding:16px}.app-header{display:flex;align-items:center;gap:12px;margin-bottom:4px}.app-logo{width:100px;height:100px;object-fit:contain;flex-shrink:0}.app-title h1{margin:4px 0}.app-title .sub{color:#667085;margin-bottom:14px}.card{background:#fff;border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 2px 10px #0001}button,input,select,textarea{font:inherit}button{border:0;border-radius:13px;padding:14px 10px;font-weight:700}.wide{width:100%;background:#dceeff;text-align:left;font-size:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.role{min-height:82px}.az{background:#e7eef5}.sak{background:#fff0b8}.buep{background:#e3f0e8}.sipo{background:#e7e7e7}.green{background:#d9f7df}.blue{background:#dceeff}.yellow{background:#fff0c9}.red{background:#ffdcdc}.small{padding:10px;background:#e9ecef}input,select,textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid #d9dee5;border-radius:10px;background:#fff;margin-bottom:7px}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hidden{display:none}.muted{color:#667085;font-size:14px}.item{border:1px solid #d9dee5;border-radius:12px;padding:11px;margin:8px 0}.event{border-left:4px solid #1f4e78;background:#f8fafc;padding:8px;margin:6px 0;border-radius:7px}.danger{background:#ffdcdc}.weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:8px 0 12px}.daybtn{min-width:0;padding:8px 3px;border:1px solid #d9dee5;border-radius:10px;background:#f2f4f7;font-weight:700;font-size:12px;line-height:1.15}.daybtn.has{background:#e8f5ec}.daybtn.selected{outline:3px solid #c8def5;background:#dceeff}.daybtn .date{display:block;font-size:14px;margin-top:3px}.daybtn .time{display:block;color:#667085;font-size:10px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.daydetail{border:1px solid #d9dee5;border-radius:12px;padding:11px 12px;margin-top:8px;background:#fff}.daydetail h3{margin:0 0 7px;font-size:17px}.daydetail .detail-line{color:#667085;font-size:14px;margin:3px 0}.daydetail .planactions{margin-top:8px}.planrow{font-size:16px;font-weight:700}.plansub{color:#667085;font-size:14px;margin-top:2px}.planactions{margin-top:6px}.planactions button{padding:7px 10px;font-size:14px}.checkgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:8px 0}.checkgrid label{font-weight:600;background:#f2f4f7;border-radius:9px;padding:8px;margin:0}.settings{background:#eef2f6}
-</style>
-<style>
-@media (max-width: 600px) {
-  .kw-header {
-    gap: 5px !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-  }
-  .kw-header h2 {
-    font-size: 21px !important;
-    line-height: 1.1 !important;
-    margin: 0 !important;
-    flex: 1 1 auto !important;
-    text-align: center !important;
-  }
-  .kw-nav {
-    font-size: 14px !important;
-    line-height: 1.1 !important;
-    min-width: 78px !important;
-    width: 78px !important;
-    padding: 10px 6px !important;
-    margin: 0 !important;
-  }
-}
-</style>
+body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wrap{max-width:620px;margin:auto;padding:16px}.app-header{display:flex;align-items:center;gap:12px;margin-bottom:4px}.app-logo{width:100px;height:100px;object-fit:contain;flex-shrink:0}.app-title h1{margin:4px 0}.app-title .sub{color:#667085;margin-bottom:14px}.card{background:#fff;border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 2px 10px #0001}.hidden{display:none}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wide{width:100%;background:#dceeff;text-align:left;font-size:18px}.small{padding:11px 9px;font-size:14px}.green{background:#d9f5df}.red{background:#ffd9d9}.danger{background:#ffd9d9}.muted{color:#667085;font-size:13px}.event{padding:9px 0;border-bottom:1px solid #e5e7eb;font-size:14px}.item{background:#f8fafc;border-radius:10px;padding:10px;margin-top:8px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin:5px 0 10px;background:#fff}label{font-weight:700;font-size:14px}.kwbar{display:flex;align-items:center;justify-content:space-between;gap:10px}.kwbar button{background:#dceeff;padding:10px 16px}.kw{font-weight:700}.weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}.daybtn{background:#eef2f7;border-radius:9px;padding:7px 3px;text-align:center;min-width:0;font-size:12px}.daybtn.has{background:#dceeff}.daybtn.selected{outline:2px solid #1f4e78}.daybtn span{display:block}.daybtn .date{font-size:11px;color:#667085}.daybtn .time{margin-top:3px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.daydetail{margin-top:12px;padding:10px;background:#f8fafc;border-radius:10px}.daydetail h3{margin:0 0 8px;font-size:15px}.detail-line{font-size:14px;margin:3px 0}.planactions{margin-top:8px}.planform{margin-top:12px}.planform.hidden{display:none}@media(max-width:430px){.wrap{padding:10px}.app-logo{width:78px;height:78px}.app-title h1{font-size:22px}.grid{gap:7px}.small{font-size:13px}}
+</style></head><body><div class="wrap">
+<div class="app-header"><img class="app-logo" src="./logo.png" alt="Meine Schicht"><div class="app-title"><h1>Meine Schicht</h1><div class="sub">Digitale Arbeits- und Tätigkeitsdokumentation</div></div></div>
 
+<div class="card"><div class="kwbar"><button onclick="changePlanWeek(-1)">‹</button><div class="kw">KW <span id="kw2"></span></div><button onclick="changePlanWeek(1)">›</button></div><div id="week"></div><button class="wide" style="margin-top:10px" onclick="togglePlanForm()">➕ Einsatz planen</button><div id="planForm" class="planform hidden"><div class="row"><div><label>Von</label><input id="pFrom" type="date"></div><div><label>Bis</label><input id="pTo" type="date"></div></div><div class="row"><div><label>Von</label><input id="pTimeFrom" type="time"></div><div><label>Bis</label><input id="pTimeTo" type="time"></div></div><label>Tätigkeit</label><select id="pRole"><option>AZF./RbBau</option><option>SAKRA</option><option>BüP</option><option>Sipo</option></select><label>Einsatzort</label><input id="pOrt"><label>Auftraggeber</label><input id="pAuftraggeber"><div class="row"><label><input type="checkbox" value="1" checked> Mo</label><label><input type="checkbox" value="2" checked> Di</label><label><input type="checkbox" value="3" checked> Mi</label><label><input type="checkbox" value="4" checked> Do</label><label><input type="checkbox" value="5" checked> Fr</label><label><input type="checkbox" value="6"> Sa</label><label><input type="checkbox" value="0"> So</label></div><button class="small" onclick="createPlans()">💾 Einsatz speichern</button></div></div>
 
-<style>
-@media (max-width: 600px) {
-  .kw-header {
-    width: 100% !important;
-    box-sizing: border-box !important;
-    display: grid !important;
-    grid-template-columns: 44px 1fr 44px !important;
-    align-items: center !important;
-    gap: 6px !important;
-    flex-wrap: nowrap !important;
-  }
-  .kw-header h2 {
-    font-size: 21px !important;
-    line-height: 1.1 !important;
-    margin: 0 !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-  }
-  .kw-arrow {
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    font-size: 25px !important;
-    line-height: 1 !important;
-    border-radius: 14px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-}
-</style>
+<div class="card"><button class="wide" onclick="beginShift()">▶️ Schicht beginnen</button></div>
 
-<style>
-.kw-header{
-  width:100%;
-  display:grid;
-  grid-template-columns:52px 1fr 52px;
-  align-items:center;
-  gap:8px;
-  margin-bottom:12px;
-  box-sizing:border-box;
-}
-.kw-header h2{
-  margin:0;
-  text-align:center;
-  white-space:nowrap;
-  font-size:clamp(20px,5.2vw,28px);
-  line-height:1.1;
-}
-.kw-arrow{
-  width:52px !important;
-  height:52px !important;
-  min-width:52px !important;
-  padding:0 !important;
-  margin:0 !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  font-size:28px !important;
-  line-height:1 !important;
-  border-radius:16px !important;
-}
-@media(max-width:600px){
-  .kw-header{
-    grid-template-columns:48px 1fr 48px;
-    gap:6px;
-  }
-  .kw-header h2{
-    font-size:21px !important;
-  }
-  .kw-arrow{
-    width:48px !important;
-    height:48px !important;
-    min-width:48px !important;
-    font-size:26px !important;
-    border-radius:14px !important;
-  }
-}
-</style></head><body>
-<style>
-@media (max-width: 600px) {
-  .kw-header {
-    gap: 8px !important;
-    align-items: center !important;
-  }
-  .kw-header h2 {
-    font-size: 24px !important;
-    white-space: nowrap !important;
-  }
-  .kw-nav {
-    font-size: 16px !important;
-    min-width: 96px !important;
-    padding: 12px 10px !important;
-  }
-}
-</style>
-<div class="wrap"><div class="app-header"><img src="meine-schicht-icon-192.png" alt="Meine Schicht" class="app-logo"><div class="app-title"><h1>Meine Schicht</h1><div class="sub">Wenig Eingaben – möglichst vollständige Dokumentation.</div></div></div>
-<section id="home"><button class="wide" onclick="show('plan')">📅 Einsätze KW <span id="kw"></span></button><div class="card"><div class="grid"><button class="role az" onclick="openRole('AZF./RbBau')">🚂<br>AZF. / RbBau</button><button class="role sak" onclick="openRole('SAKRA')">🦺<br>SAKRA</button><button class="role buep" onclick="openRole('BüP')">🚧<br>BüP</button><button class="role sipo" onclick="openRole('Sipo')">🦺<br>Sipo</button></div></div>
-<div class="card"><h2>Fahrt & Schicht</h2><div class="grid"><button class="green" onclick="departure()">🚗<br>ABFAHRT</button><button class="blue" onclick="arrive()">📍<br>ANGEKOMMEN</button><button class="yellow" onclick="beginShift()">▶️<br>SCHICHT BEGINNEN</button><button class="red" onclick="simpleEvent('Schichtende')">🛑<br>SCHICHT ENDE</button></div><hr><label>Startort</label><select id="start"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option><option>Sonstiger Startort</option></select><input id="startOther" placeholder="Sonstiger Startort"><div class="muted">KM-Stand wird beim Klick auf ABFAHRT abgefragt.</div><label>Ziel / Ankunft</label><select id="arrivalType" onchange="arrivalFields()"><option>Wohnsitz</option><option>Zweiter Wohnsitz / Unterkunft</option><option>Einsatzort</option></select><div id="arrivalExtra"></div><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div>
-<div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div></section>
-<section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
-<div class="card">
-<div class="kw-header">
-  <button class="kw-arrow" onclick="changePlanWeek(-1)" aria-label="Vorherige Kalenderwoche">←</button>
-  <h2>📅 Einsätze KW <span id="kw2"></span></h2>
-  <button class="kw-arrow" onclick="changePlanWeek(1)" aria-label="Nächste Kalenderwoche">→</button>
+<div id="role" class="card hidden"><h2 id="roleTitle"></h2><div id="setup"></div><div id="buttons"></div><div class="card"><h3>🚗 Fahrt</h3><div class="grid"><button class="small" onclick="departure()">🚗 Abfahrt</button><button class="small" onclick="document.getElementById('arrivalBox').classList.toggle('hidden')">📍 Ankunft</button></div><div id="arrivalBox" class="hidden" style="margin-top:10px"><label>Zielart</label><select id="arrivalType" onchange="arrivalFields()"><option>Einsatzort</option><option>Wohnsitz</option><option>Zweitwohnung / Unterkunft</option></select><div id="arrivalExtra"></div><button class="small" onclick="arrive()">📍 ANGEKOMMEN</button><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div></div><div class="card"><h3>📋 Ereignisse</h3><div id="events"></div></div><button class="wide" onclick="exportPDF()">📄 PDF erstellen</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
+
+<div id="home" class="card"><h3>Heute</h3><div id="today" class="muted">Noch keine Erfassung.</div></div>
+<div id="settings" class="card hidden"><h2>⚙️ Stammdaten</h2><label>Arbeitgeber</label><input id="setEmployer"><label>Mitarbeiter Name</label><input id="setName"><label>Personalnummer</label><input id="setPersonal"><button class="small" onclick="saveSettings()">💾 Speichern</button></div>
 </div>
-<div id="week"></div>
-<button class="small" onclick="togglePlanForm()">＋ Einsatz / Zeitraum hinzufügen</button>
-<div id="planForm" class="hidden" style="margin-top:12px">
-<label>Von</label><input id="pFrom" type="date">
-<label>Bis</label><input id="pTo" type="date">
-<div class="row"><div><label>Von</label><input id="pTimeFrom" type="time"></div><div><label>Bis</label><input id="pTimeTo" type="time"></div></div>
-<label>Tätigkeit</label><select id="pRole"><option>AZF./RbBau</option><option>SAKRA</option><option>BüP</option><option>Sipo</option></select>
-<label>Einsatzort</label><input id="pOrt" placeholder="z. B. Wolfratshausen">
-<label>Auftraggeber</label><input id="pAuftraggeber" placeholder="Auftraggeber">
-<label>Wochentage übernehmen</label>
-<div class="checkgrid">
-<label><input type="checkbox" value="1" checked> Mo</label><label><input type="checkbox" value="2" checked> Di</label>
-<label><input type="checkbox" value="3" checked> Mi</label><label><input type="checkbox" value="4" checked> Do</label>
-<label><input type="checkbox" value="5" checked> Fr</label><label><input type="checkbox" value="6" checked> Sa</label>
-<label><input type="checkbox" value="0" checked> So</label>
-</div>
-<button class="small" onclick="createPlans()">✅ Einsätze anlegen</button>
-<button class="small" onclick="togglePlanForm()">Abbrechen</button>
-</div></div></section>
-<section id="settings" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
-<div class="card"><h2>⚙️ Meine Daten</h2>
-<div class="muted">Einmal eintragen – erscheint automatisch im PDF-Bericht.</div>
-<label>Arbeitgeber</label><input id="setEmployer" placeholder="Arbeitgeber">
-<label>Mein Name</label><input id="setName" placeholder="Vorname Nachname">
-<label>Personalnummer</label><input id="setPersonal" placeholder="Personalnummer">
-<button class="small" onclick="saveSettings()">💾 Daten speichern</button>
-</div></section>
-<section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
-</div><script>
-const KEY='meine_schicht_v3';let role='';let planWeekOffset=0;
-const get=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}};const save=d=>localStorage.setItem(KEY,JSON.stringify(d));const pad=n=>String(n).padStart(2,'0');
-function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
-function show(id){['home','plan','role','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
-const SETTINGS_KEY='meine_schicht_stammdaten';
+
+<script>
+const KEY='meine_schicht_v3',SETTINGS_KEY='meine_schicht_stammdaten',RANGIER_KEY='meine_schicht_aktiver_rangier_v1';
+let role='',planWeekOffset=0,selectedPlanDate='';
+function pad(n){return String(n).padStart(2,'0')}
+function now(){let d=new Date();return {date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}}
+function get(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function getActiveRangier(){try{return JSON.parse(localStorage.getItem(RANGIER_KEY)||'null')}catch(e){return null}}
+function setActiveRangier(x){if(x)localStorage.setItem(RANGIER_KEY,JSON.stringify(x));else localStorage.removeItem(RANGIER_KEY)}
+function kw(){let d=new Date();d.setHours(12,0,0,0);let day=d.getDay()||7;d.setDate(d.getDate()+4-day);let y=new Date(d.getFullYear(),0,1);return Math.ceil((((d-y)/86400000)+1)/7)}
+function show(id){['home','plan','role','settings'].forEach(x=>{let e=document.getElementById(x);if(e)e.classList.add('hidden')});let e=document.getElementById(id);if(e)e.classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch(e){return{}}}
-function openSettings(){loadSettings();show('settings')}
 function loadSettings(){let s=getSettings();document.getElementById('setEmployer').value=s.employer||'';document.getElementById('setName').value=s.name||'';document.getElementById('setPersonal').value=s.personal||''}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employer:document.getElementById('setEmployer').value.trim(),name:document.getElementById('setName').value.trim(),personal:document.getElementById('setPersonal').value.trim()}));alert('Persönliche Daten gespeichert.')}
 function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
-function simpleEvent(type){add(type)}
-function departure(){
-  let km=prompt('KM-Stand bei Abfahrt:','');
-  if(km===null||!km.trim())return;
-  if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Stand eingeben.');
-  add('Abfahrt',{start:document.getElementById('start').value,startOther:document.getElementById('startOther').value,kmStart:km.trim().replace(',','.')});
-}
-function arrivalFields(){
- let t=document.getElementById('arrivalType')?.value;
- let e=document.getElementById('arrivalExtra');
- if(!e)return;
- e.innerHTML=t==='Einsatzort'?'<input id="arrivalOrt" placeholder="Einsatzort">':'';
-}
-function arrive(){
- let t=document.getElementById('arrivalType')?.value||'Einsatzort';
- let ort=t==='Einsatzort'?(document.getElementById('arrivalOrt')?.value||prompt('Einsatzort:','')):t;
- if(!ort)return;
- if(t!=='Einsatzort'){
-    let km=prompt('KM-Endstand bei Ankunft:','');
-    if(km===null||!km.trim())return;
-    if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Endstand eingeben.');
-    add('Angekommen',{zielart:t,ort,kmEnd:km.trim().replace(',','.')});
-  }else{
-   add('Angekommen',{zielart:t,ort});
- }
-}
+function departure(){let km=prompt('KM-Stand bei Abfahrt:','');if(km===null||!km.trim())return;if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Stand eingeben.');add('Abfahrt',{start:document.getElementById('start')?.value||'',startOther:document.getElementById('startOther')?.value||'',kmStart:km.trim().replace(',','.')})}
+function arrivalFields(){let t=document.getElementById('arrivalType')?.value,e=document.getElementById('arrivalExtra');if(!e)return;e.innerHTML=t==='Einsatzort'?'<input id="arrivalOrt" placeholder="Einsatzort">':''}
+function arrive(){let t=document.getElementById('arrivalType')?.value||'Einsatzort',ort=t==='Einsatzort'?(document.getElementById('arrivalOrt')?.value||prompt('Einsatzort:','')):t;if(!ort)return;add('Angekommen',{zielart:t,ort})}
 function beginShift(){let r=prompt('Funktion:\n1 AZF./RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'AZF./RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
-function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
+function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();document.getElementById('role').classList.remove('hidden');document.getElementById('home').classList.add('hidden')}
 function setupRole(){let e=document.getElementById('setup');if(role==='Sipo')e.innerHTML='<label>Zugeordnete SAKRA (optional)</label><input id="sS" placeholder="Name"><button class="small" onclick="saveSetup()">Speichern</button>';else if(role==='SAKRA')e.innerHTML='<label>Sipo dabei (optional)</label><input id="sS"><label>Einsatzbereich</label><select id="sA" onchange="sakFields()"><option value="">Bitte wählen</option><option>Bahnhof</option><option>Strecke</option><option>Bahnübergang</option></select><div id="sF"></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else if(role==='BüP')e.innerHTML='<label>BÜ / Bezeichnung</label><input id="bN"><label>Strecke</label><input id="bS"><label>km</label><input id="bK"><div class="row"><div><label>Fahrdienst 1</label><input id="f1"></div><div><label>Fahrdienst 2 optional</label><input id="f2"></div></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else e.innerHTML='<div class="muted">Rangier- und Baustellendokumentation.</div>'}
 function sakFields(){let v=document.getElementById('sA').value,e=document.getElementById('sF');e.innerHTML=v==='Bahnhof'?'<label>Bahnhof</label><input id="sP">':v==='Strecke'?'<label>Strecke</label><input id="sP"><label>km</label><input id="sK">':v==='Bahnübergang'?'<label>BÜ</label><input id="sP"><label>Strecke</label><input id="sT"><label>km</label><input id="sK">':''}
 function saveSetup(){let n=now(),d=get(),x={kind:'setup',date:n.date,time:n.time,role};if(role==='Sipo')x.sakra=document.getElementById('sS').value;if(role==='SAKRA'){x.sipo=document.getElementById('sS').value;x.area=document.getElementById('sA').value;x.place=document.getElementById('sP')?.value||'';x.km=document.getElementById('sK')?.value||'';x.strecke=document.getElementById('sT')?.value||''}if(role==='BüP'){x.bue=document.getElementById('bN').value;x.strecke=document.getElementById('bS').value;x.km=document.getElementById('bK').value;x.fd1=document.getElementById('f1').value;x.fd2=document.getElementById('f2').value}d.push(x);save(d);renderRole()}
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Zugmeldung erhalten\')">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else e.innerHTML='<div class="grid"><button class="small" onclick="move()">🚂 Rangieren</button><button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button><button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button><button class="small" onclick="add(\'Zug neu zusammengestellt\')">🔄 Neu zusammengestellt</button><button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button><button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button><button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button><button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button><button class="small" onclick="loadUnload()">📦 Laden / Entladen</button><button class="small" onclick="detail(\'Warten\',\'Grund\')">⏳ Warten</button><button class="small" onclick="detail(\'Störung\',\'Beschreibung\')">⚠️ Störung</button><button class="small" onclick="add(\'Zug fertig\')">✅ Zug fertig</button></div>';renderEvents()}
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Zugmeldung erhalten\')">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else{let active=getActiveRangier();let r=active?'<button class="small" onclick="continueMove()">▶️ Weiter</button><button class="small" onclick="holdMove()">⏸ Halten / Warten</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>':'<button class="small" onclick="move()">🚂 Rangieren</button>';e.innerHTML='<div class="grid">'+r+'<button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button><button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button><button class="small" onclick="add(\'Zug neu zusammengestellt\')">🔄 Neu zusammengestellt</button><button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button><button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button><button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button><button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button><button class="small" onclick="loadUnload()">📦 Laden / Entladen</button><button class="small" onclick="holdMove()">⏸ Halten / Warten</button><button class="small" onclick="add(\'Störung\')">⚠️ Störung</button><button class="small" onclick="add(\'Zug fertig\')">✅ Zug fertig</button></div>}renderEvents()}
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
-function move(){let v=prompt('Von:','');if(v===null)return;let n=prompt('Nach:','');if(n===null)return;add('Rangieren',{von:v,nach:n,fahrart:confirm('Geschoben? OK = geschoben, Abbrechen = gezogen')?'geschoben':'gezogen'})}
-function secureWagons(){
-  let v=prompt('Wagen gesichert:\n1 = Handbremse\n2 = Hemmschuhe','1');
-  if(v==='1')add('Wagen gesichert',{detail:'Handbremse'});
-  else if(v==='2')add('Wagen gesichert',{detail:'Hemmschuhe'});
-}
-function parkVehicle(){
- let gleis=prompt('Gleis:','');
- if(gleis===null||!gleis.trim())return;
- add('Wagen / Lok abgestellt',{detail:'Gleis '+gleis.trim()});
-}
-function loadUnload(){
- let v=prompt('Laden / Entladen wählen:\n1 = Nur beladen\n2 = Nur entladen\n3 = Beladen + Entladen','3');
- if(v==='1')add('Nur beladen');
- else if(v==='2')add('Nur entladen');
- else if(v==='3')add('Beladen + Entladen');
-}
-function renderEvents(){let e=document.getElementById('events');if(!e)return;let a=get().filter(x=>x.kind==='event'&&x.role===role);e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.time}</b> – ${esc(x.type)}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.'}
-function render(){document.getElementById('kw').textContent=kw();document.getElementById('kw2').textContent=kw();let a=get().filter(x=>x.kind==='event'&&x.date===now().date);document.getElementById('today').innerHTML=a.length?a.map(x=>`${x.time} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>'):'Noch keine Erfassung.';renderEvents()}
-function planWeekInfo(){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+planWeekOffset*7);let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-day);let year=u.getUTCFullYear();let first=new Date(Date.UTC(year,0,1));let week=Math.ceil((((u-first)/86400000)+1)/7);return {year,week};}
-function isoWeekOf(s){let m=String(s).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);if(!m)return {year:0,week:0};let d=new Date(+m[3],+m[2]-1,+m[1]);d.setHours(12,0,0,0);let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-day);let year=u.getUTCFullYear(),first=new Date(Date.UTC(year,0,1));return {year,week:Math.ceil((((u-first)/86400000)+1)/7)};}
-function changePlanWeek(delta){planWeekOffset+=delta;selectedPlanDate="";renderPlans();}
-function togglePlanForm(){
- let f=document.getElementById('planForm');
- f.classList.toggle('hidden');
- if(!f.classList.contains('hidden')){
-   let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+planWeekOffset*7);
-   let monday=new Date(d);let day=monday.getDay()||7;monday.setDate(monday.getDate()-(day-1));
-   let sunday=new Date(monday);sunday.setDate(sunday.getDate()+6);
-   const iso=x=>`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
-   document.getElementById('pFrom').value=iso(monday);document.getElementById('pTo').value=iso(sunday);
-   document.getElementById('pTimeFrom').value='14:00';document.getElementById('pTimeTo').value='22:30';
- }
-}
-function createPlans(){
- let from=document.getElementById('pFrom').value,to=document.getElementById('pTo').value;
- if(!from||!to||to<from)return alert('Bitte einen gültigen Zeitraum eingeben.');
- let tf=document.getElementById('pTimeFrom').value,tt=document.getElementById('pTimeTo').value;
- if(!tf||!tt)return alert('Bitte Von-/Bis-Zeit eintragen.');
- let roleName=document.getElementById('pRole').value,ort=document.getElementById('pOrt').value.trim(),auftraggeber=document.getElementById('pAuftraggeber').value.trim();
- let selected=[...document.querySelectorAll('#planForm input[type=checkbox]:checked')].map(x=>Number(x.value));
- let d=get(),id=Date.now();
- for(let cur=new Date(from+'T12:00:00');cur<=new Date(to+'T12:00:00');cur.setDate(cur.getDate()+1)){
-   if(!selected.includes(cur.getDay()))continue;
-   let date=`${pad(cur.getDate())}.${pad(cur.getMonth()+1)}.${cur.getFullYear()}`;
-   d.push({kind:'plan',id:id++,date,time:`${tf}-${tt}`,role:roleName,ort,auftraggeber});
- }
- save(d);document.getElementById('planForm').classList.add('hidden');renderPlans();
-}
-function editPlan(id){
- let d=get(),p=d.find(x=>x.id===id);if(!p)return;
- p.date=prompt('Datum:',p.date)||p.date;p.time=prompt('Zeit:',p.time)||p.time;
- p.role=prompt('Tätigkeit:',p.role)||p.role;p.ort=prompt('Einsatzort:',p.ort)||'';
- p.auftraggeber=prompt('Auftraggeber:',p.auftraggeber||'')||'';
- save(d);renderPlans()
-}
+function chooseRangierart(){let v=prompt('Rangierart:\n1 = Geschoben\n2 = Gezogen','1');if(v==='1')return 'geschoben';if(v==='2')return 'gezogen';return null}
+function move(){let v=prompt('Von:','');if(v===null||!v.trim())return;let n=prompt('Nach:','');if(n===null||!n.trim())return;let fahrart=chooseRangierart();if(!fahrart)return;let active={von:v.trim(),nach:n.trim(),fahrart};setActiveRangier(active);add('Rangieren',{von:active.von,nach:active.nach,fahrart:active.fahrart});renderRole()}
+function holdMove(){let active=getActiveRangier();if(!active)return alert('Kein aktiver Rangiervorgang. Bitte zuerst Rangieren starten.');let v=prompt('Halten / Warten:\n1 = Zug / Fahrzeug\n2 = Mitarbeiter im Gleisbereich\n3 = Warten auf Zustimmung\n4 = Störung\n5 = Sonstiges','3');let m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};if(v==='5'){let d=prompt('Sonstiges:','');if(d===null||!d.trim())return;add('Halten / Warten',{detail:'Sonstiges – '+d.trim(),rangierVorgang:active.von+' → '+active.nach})}else if(m[v])add('Halten / Warten',{detail:m[v],rangierVorgang:active.von+' → '+active.nach});else return;renderRole()}
+function continueMove(){let active=getActiveRangier();if(!active)return alert('Kein aktiver Rangiervorgang.');let choice=prompt('Rangiervorgang fortsetzen\nAktuell: '+active.von+' → '+active.nach+'\n\n1 = '+active.von+'\n2 = '+active.nach+'\n3 = Neue Angabe','2');if(choice===null)return;let start;if(choice==='1')start=active.von;else if(choice==='2')start=active.nach;else if(choice==='3'){start=prompt('Weiter ab:','');if(start===null||!start.trim())return;start=start.trim()}else return;let target=prompt('Weiter nach:','');if(target===null||!target.trim())return;let next={von:start,nach:target.trim(),fahrart:active.fahrart};add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart});setActiveRangier(next);renderRole()}
+function endMove(){let active=getActiveRangier();if(!active)return;add('Rangiervorgang beendet',{detail:active.von+' → '+active.nach+' · '+active.fahrart});setActiveRangier(null);renderRole()}
+function secureWagons(){let v=prompt('Wagen gesichert:\n1 = Handbremse\n2 = Hemmschuhe','1');if(v==='1')add('Wagen gesichert',{detail:'Handbremse'});else if(v==='2')add('Wagen gesichert',{detail:'Hemmschuhe'})}
+function parkVehicle(){let gleis=prompt('Gleis:','');if(gleis===null||!gleis.trim())return;add('Wagen / Lok abgestellt',{detail:'Gleis '+gleis.trim()})}
+function loadUnload(){let v=prompt('Laden / Entladen wählen:\n1 = Nur beladen\n2 = Nur entladen\n3 = Beladen + Entladen','3');if(v==='1')add('Nur beladen');else if(v==='2')add('Nur entladen');else if(v==='3')add('Beladen + Entladen')}
+function currentShiftEvents(){let a=get().filter(x=>x.kind==='event'),starts=a.filter(x=>x.type==='Schichtbeginn'),ends=a.filter(x=>x.type==='Schichtende');if(starts.length&&(!ends.length||a.lastIndexOf(starts[starts.length-1])>a.lastIndexOf(ends[ends.length-1]))){let s=starts[starts.length-1],i=a.lastIndexOf(s);return a.slice(i)}return a.filter(x=>x.date===now().date)}
+function renderEvents(){let e=document.getElementById('events');if(!e)return;let a=currentShiftEvents().filter(x=>x.role===role);e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.date} ${x.time}</b> – ${esc(x.type)}${x.fahrart?' – '+esc(x.fahrart):''}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.'}
+function render(){document.getElementById('kw').textContent=kw();document.getElementById('kw2').textContent=kw();let a=currentShiftEvents();document.getElementById('today').innerHTML=a.length?a.map(x=>`${x.date} ${x.time} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>'):'Noch keine Erfassung.';renderEvents()}
+function planWeekInfo(){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+planWeekOffset*7);let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-day);let year=u.getUTCFullYear();let first=new Date(Date.UTC(year,0,1));let week=Math.ceil((((u-first)/86400000)+1)/7);return {year,week}}
+function isoWeekOf(s){let m=String(s).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);if(!m)return{year:0,week:0};let d=new Date(+m[3],+m[2]-1,+m[1]);d.setHours(12,0,0,0);let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-day);let year=u.getUTCFullYear(),first=new Date(Date.UTC(year,0,1));return{year,week:Math.ceil((((u-first)/86400000)+1)/7)}}
+function changePlanWeek(delta){planWeekOffset+=delta;selectedPlanDate="";renderPlans()}
+function togglePlanForm(){let f=document.getElementById('planForm');f.classList.toggle('hidden');if(!f.classList.contains('hidden')){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+planWeekOffset*7);let monday=new Date(d),day=monday.getDay()||7;monday.setDate(monday.getDate()-(day-1));let sunday=new Date(monday);sunday.setDate(sunday.getDate()+6);const iso=x=>`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;document.getElementById('pFrom').value=iso(monday);document.getElementById('pTo').value=iso(sunday);document.getElementById('pTimeFrom').value='14:00';document.getElementById('pTimeTo').value='22:30'}}
+function createPlans(){let from=document.getElementById('pFrom').value,to=document.getElementById('pTo').value;if(!from||!to||to<from)return alert('Bitte einen gültigen Zeitraum eingeben.');let tf=document.getElementById('pTimeFrom').value,tt=document.getElementById('pTimeTo').value;if(!tf||!tt)return alert('Bitte Von-/Bis-Zeit eintragen.');let roleName=document.getElementById('pRole').value,ort=document.getElementById('pOrt').value.trim(),auftraggeber=document.getElementById('pAuftraggeber').value.trim();let selected=[...document.querySelectorAll('#planForm input[type=checkbox]:checked')].map(x=>Number(x.value));let d=get(),id=Date.now();for(let cur=new Date(from+'T12:00:00');cur<=new Date(to+'T12:00:00');cur.setDate(cur.getDate()+1)){if(!selected.includes(cur.getDay()))continue;let date=`${pad(cur.getDate())}.${pad(cur.getMonth()+1)}.${cur.getFullYear()}`;d.push({kind:'plan',id:id++,date,time:`${tf}-${tt}`,role:roleName,ort,auftraggeber})}save(d);document.getElementById('planForm').classList.add('hidden');renderPlans()}
+function editPlan(id){let d=get(),p=d.find(x=>x.id===id);if(!p)return;p.date=prompt('Datum:',p.date)||p.date;p.time=prompt('Zeit:',p.time)||p.time;p.role=prompt('Tätigkeit:',p.role)||p.role;p.ort=prompt('Einsatzort:',p.ort)||'';p.auftraggeber=prompt('Auftraggeber:',p.auftraggeber||'')||'';save(d);renderPlans()}
 function delPlan(id){if(confirm('Einsatz löschen?')){save(get().filter(x=>x.id!==id));renderPlans()}}
-let selectedPlanDate='';
-function renderPlans(){
- let w=planWeekInfo();document.getElementById('kw2').textContent=w.week;
- let a=get().filter(x=>x.kind==='plan').filter(x=>{let q=isoWeekOf(x.date);return q.year===w.year&&q.week===w.week});
- let byDate={};a.forEach(p=>(byDate[p.date]||(byDate[p.date]=[])).push(p));
- let base=new Date();base.setHours(12,0,0,0);base.setDate(base.getDate()+planWeekOffset*7);
- let monday=new Date(base);let day=monday.getDay()||7;monday.setDate(monday.getDate()-(day-1));
- let days=['Mo','Di','Mi','Do','Fr','Sa','So'];
- let iso=x=>`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
- let german=x=>`${pad(x.getDate())}.${pad(x.getMonth()+1)}.${x.getFullYear()}`;
- if(!selectedPlanDate || !byDate[selectedPlanDate]){
-   let first=a.slice().sort((x,y)=>x.date.localeCompare(y.date))[0];
-   selectedPlanDate=first?.date||german(monday);
- }
- let e=document.getElementById('week');
- e.innerHTML=`<div class="weekdays">${days.map((d,i)=>{let dt=new Date(monday);dt.setDate(monday.getDate()+i);let ds=german(dt);let list=byDate[ds]||[];let active=ds===selectedPlanDate?' selected':'';let time=list[0]?.time||'—';return `<button class="daybtn${list.length?' has':''}${active}" onclick="selectPlanDay('${ds}')">${d}<span class="date">${dt.getDate()}</span><span class="time">${esc(time.split('-')[0]||'—')}</span></button>`}).join('')}</div>`;
- let selected=byDate[selectedPlanDate]||[];
- let detailTitle=selectedPlanDate||german(monday);
- let detail=selected.length?selected.map(p=>`<div class="daydetail"><h3>${esc(detailTitle)} · ${esc(p.time)}</h3><div class="detail-line">${esc(p.role)}</div>${p.ort?`<div class="detail-line">📍 ${esc(p.ort)}</div>`:''}${p.auftraggeber?`<div class="detail-line">🏢 ${esc(p.auftraggeber)}</div>`:''}<div class="planactions"><button class="small" onclick="editPlan(${p.id})">✏️ Ändern</button> <button class="small danger" onclick="delPlan(${p.id})">🗑️</button></div></div>`).join(''):`<div class="daydetail"><h3>${esc(detailTitle)}</h3><div class="detail-line">Kein Einsatz geplant.</div></div>`;
- e.innerHTML+=detail;
-}
-function selectPlanDay(date){selectedPlanDate=date;renderPlans();}
-function homeArrival(){
- let t=document.getElementById('arrivalType')?.value||'Wohnsitz';
- if(t==='Einsatzort')return alert('Am Einsatzort bitte ANGEKOMMEN verwenden.');
- let km=prompt('KM-Endstand bei Ankunft / Tagesabschluss:','');
- if(km===null||!km.trim())return;
- if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Endstand eingeben.');
- add('Ankunft / Tagesabschluss',{zielart:t,kmEnd:km.trim().replace(',','.')});
-}
-function kmNumber(v){let n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null;}
-function dailyKmTotal(events){
- let total=0,lastStart=null;
- events.forEach(x=>{
-  if(x.type==='Abfahrt'){let k=kmNumber(x.kmStart);if(k!==null)lastStart=k;}
-  if((x.type==='Angekommen'||x.type==='Ankunft / Tagesabschluss')&&x.kmEnd){
-   let end=kmNumber(x.kmEnd);
-   if(lastStart!==null&&end!==null&&end>=lastStart){total+=end-lastStart;lastStart=null;}
-  }
- });
- return total;
-}
-function exportPDF(){
- let a=get().filter(x=>x.kind==='event');if(!a.length)return alert('Noch keine Daten.');
- let s=getSettings();
- let planByDate={};get().filter(x=>x.kind==='plan').forEach(p=>{planByDate[p.date]=p});
- let w=window.open('','_blank');if(!w)return alert('Pop-up blockiert.');
- let rows=a.map(x=>{
-  let detailParts=[];
-  if(x.start) detailParts.push('Start: '+x.start+(x.startOther?' ('+x.startOther+')':''));
-  if(x.kmStart) detailParts.push('KM Start: '+x.kmStart);
-  if(x.zielart) detailParts.push('Ziel: '+x.zielart);
-  if(x.ort) detailParts.push('Ort: '+x.ort);
-  if(x.kmEnd) detailParts.push('KM Ende: '+x.kmEnd);
-  if(x.detail) detailParts.push(x.detail);
-  return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`;
-}).join('');
- let firstDate=a[0]?.date||'';let p=planByDate[firstDate]||{};
- w.document.write(`<html><head><meta charset="utf-8"><title>Meine Schicht</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
-<div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
-<div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
-<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);w.document.close()}
-function clearData(){
- if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
- const plans=get().filter(x=>x.kind==='plan');
- save(plans);
- role='';
- render();
- renderPlans();
- alert('Erfassungsdaten wurden gelöscht. Deine Einsätze bleiben erhalten.');
-}arrivalFields();render();
+function renderPlans(){let w=planWeekInfo();document.getElementById('kw2').textContent=w.week;let a=get().filter(x=>x.kind==='plan').filter(x=>{let q=isoWeekOf(x.date);return q.year===w.year&&q.week===w.week}),byDate={};a.forEach(p=>(byDate[p.date]||(byDate[p.date]=[])).push(p));let base=new Date();base.setHours(12,0,0,0);base.setDate(base.getDate()+planWeekOffset*7);let monday=new Date(base),day=monday.getDay()||7;monday.setDate(monday.getDate()-(day-1));let days=['Mo','Di','Mi','Do','Fr','Sa','So'],german=x=>`${pad(x.getDate())}.${pad(x.getMonth()+1)}.${x.getFullYear()}`;if(!selectedPlanDate||!byDate[selectedPlanDate]){let first=a.slice().sort((x,y)=>x.date.localeCompare(y.date))[0];selectedPlanDate=first?.date||german(monday)}let e=document.getElementById('week');e.innerHTML=`<div class="weekdays">${days.map((d,i)=>{let dt=new Date(monday);dt.setDate(monday.getDate()+i);let ds=german(dt),list=byDate[ds]||[],active=ds===selectedPlanDate?' selected':'',time=list[0]?.time||'—';return `<button class="daybtn${list.length?' has':''}${active}" onclick="selectPlanDay('${ds}')">${d}<span class="date">${dt.getDate()}</span><span class="time">${esc(time.split('-')[0]||'—')}</span></button>`}).join('')}</div>`;let selected=byDate[selectedPlanDate]||[],detail=selected.length?selected.map(p=>`<div class="daydetail"><h3>${esc(selectedPlanDate)} · ${esc(p.time)}</h3><div class="detail-line">${esc(p.role)}</div>${p.ort?`<div class="detail-line">📍 ${esc(p.ort)}</div>`:''}${p.auftraggeber?`<div class="detail-line">🏢 ${esc(p.auftraggeber)}</div>`:''}<div class="planactions"><button class="small" onclick="editPlan(${p.id})">✏️ Ändern</button> <button class="small danger" onclick="delPlan(${p.id})">🗑️</button></div></div>`).join(''):`<div class="daydetail"><h3>${esc(selectedPlanDate)}</h3><div class="detail-line">Kein Einsatz geplant.</div></div>`;e.innerHTML+=detail}
+function selectPlanDay(date){selectedPlanDate=date;renderPlans()}
+function homeArrival(){let t=document.getElementById('arrivalType')?.value||'Wohnsitz';if(t==='Einsatzort')return alert('Am Einsatzort bitte ANGEKOMMEN verwenden.');let km=prompt('KM-Endstand bei Ankunft / Tagesabschluss:','');if(km===null||!km.trim())return;if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Endstand eingeben.');add('Ankunft / Tagesabschluss',{zielart:t,kmEnd:km.trim().replace(',','.')});setTimeout(()=>exportPDF(true),250)}
+function kmNumber(v){let n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null}
+function dailyKmTotal(events){let total=0,lastStart=null;events.forEach(x=>{if(x.type==='Abfahrt'){let k=kmNumber(x.kmStart);if(k!==null)lastStart=k}if((x.type==='Angekommen'||x.type==='Ankunft / Tagesabschluss')&&x.kmEnd){let end=kmNumber(x.kmEnd);if(lastStart!==null&&end!==null&&end>=lastStart){total+=end-lastStart;lastStart=null}}});return total}
+function exportPDF(auto=false){let a=currentShiftEvents();if(!a.length)return alert('Noch keine Daten.');let s=getSettings(),w=window.open('','_blank');if(!w)return alert('Pop-up blockiert.');let rows=a.map(x=>{let detailParts=[];if(x.start)detailParts.push('Start: '+x.start+(x.startOther?' ('+x.startOther+')':''));if(x.kmStart)detailParts.push('KM Start: '+x.kmStart);if(x.zielart)detailParts.push('Ziel: '+x.zielart);if(x.ort)detailParts.push('Ort: '+x.ort);if(x.kmEnd)detailParts.push('KM Ende: '+x.kmEnd);if(x.detail)detailParts.push(x.detail);if(x.rangierVorgang)detailParts.push('Rangiervorgang: '+x.rangierVorgang);if(x.fahrart)detailParts.push(x.fahrart);return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`}).join('');w.document.write(`<html><head><meta charset="utf-8"><title>Meine Schicht</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1><div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div><br><table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);w.document.close();if(auto)setTimeout(()=>w.print(),400)}
+function clearData(){if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;const plans=get().filter(x=>x.kind==='plan');save(plans);setActiveRangier(null);role='';render();renderPlans();alert('Erfassungsdaten wurden gelöscht. Deine Einsätze bleiben erhalten.')}
+arrivalFields();render();
 </script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});</script></body></html>
