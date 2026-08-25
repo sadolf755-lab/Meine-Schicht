@@ -231,9 +231,9 @@ function chooseRangierart(){
  return null;
 }
 function move(){
- let v=prompt('Von:','');
+ let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
  if(v===null||!v.trim())return;
- let n=prompt('Nach:','');
+ let n=prompt('Nach / Ziel (KM, Gleis, Signal oder Ort):','');
  if(n===null||!n.trim())return;
  let fahrart=chooseRangierart();
  if(!fahrart)return;
@@ -265,12 +265,15 @@ function continueMove(){
  let active=getActiveRangier();
  if(!active)return alert('Kein aktiver Rangiervorgang.');
  let start=active.haltKm||active.nach;
- let choice=prompt('Rangiervorgang fortsetzen\nAktueller Halt: '+(active.haltKm?'km '+active.haltKm:'KM unbekannt')+'\nUrsprüngliches Ziel: km '+active.nach+'\n\n1 = weiter zum bisherigen Ziel '+active.nach+'\n2 = neues Ziel eingeben','1');
+ let choice=prompt('Rangiervorgang fortsetzen\nAktueller Halt: '+(active.haltKm?'km '+active.haltKm:'KM unbekannt')+'\nUrsprüngliches Ziel: '+active.nach+'\n\n1 = weiter zum bisherigen Ziel '+active.nach+'\n2 = neues Ziel eingeben','1');
  if(choice===null)return;
  let target;
  if(choice==='1')target=active.nach;
- else if(choice==='2'){target=prompt('Neues Ziel (KM):',active.nach);if(target===null||!target.trim())return;target=target.trim().replace(',','.');if(!/^\d+(?:\.\d+)?$/.test(target))return alert('Bitte ein gültiges Ziel eingeben.');}
- else return;
+ else if(choice==='2'){
+   target=prompt('Neues Ziel (KM, Gleis, Signal oder Ort):',active.nach);
+   if(target===null||!target.trim())return;
+   target=target.trim();
+ }else return;
  let next={von:start,nach:target,fahrart:active.fahrart,startedAt:active.startedAt};
  add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart});
  setActiveRangier(next);
