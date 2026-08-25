@@ -222,6 +222,7 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  '<button class="small" onclick="add(\'Zug fertig\')">✅ Zug fertig</button></div>';
  if(active)e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(active.fahrart)+'</div>';
  renderEvents()}
+}
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
 function chooseRangierart(){
  let v=prompt('Rangierart:\n1 = Geschoben\n2 = Gezogen','1');
@@ -417,5 +418,16 @@ function clearData(){
  render();
  renderPlans();
  alert('Erfassungsdaten wurden gelöscht. Deine Einsätze bleiben erhalten.');
-}arrivalFields();render();
+}
+
+function load(){return get()}
+function today(){return now().date}
+function render(){
+  document.getElementById('kw').textContent=kw();
+  document.getElementById('today').innerHTML=getShiftEvents().length
+    ? getShiftEvents().slice().reverse().map(x=>`${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>')
+    : 'Noch keine Erfassung.';
+  renderEvents();
+}
+arrivalFields();render();
 </script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});</script></body></html>
