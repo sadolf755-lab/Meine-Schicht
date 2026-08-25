@@ -245,33 +245,33 @@ function move(){
 function holdMove(){
  let active=getActiveRangier();
  if(!active)return alert('Kein aktiver Rangiervorgang. Bitte zuerst Rangieren starten.');
+ let haltKm=prompt('KM bei Halt (wenn bekannt):','');
+ if(haltKm===null)return;
+ haltKm=haltKm.trim().replace(',','.');
+ if(haltKm && !/^\d+(?:\.\d+)?$/.test(haltKm))return alert('Bitte einen gültigen KM-Stand eingeben oder das Feld leer lassen.');
  let v=prompt('Halten / Warten:\n1 = Zug / Fahrzeug\n2 = Mitarbeiter im Gleisbereich\n3 = Warten auf Zustimmung\n4 = Störung\n5 = Sonstiges','');
  let m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};
- if(v==='5'){
-   let d=prompt('Sonstiges:','');
-   if(d===null||!d.trim())return;
-   add('Halten / Warten',{detail:'Sonstiges – '+d.trim(),rangierVorgang:active.von+' → '+active.nach});
- }else if(m[v]){
-   add('Halten / Warten',{detail:m[v],rangierVorgang:active.von+' → '+active.nach});
- }else return;
+ let detail='';
+ if(v==='5'){let d=prompt('Sonstiges:','');if(d===null||!d.trim())return;detail='Sonstiges – '+d.trim();}
+ else if(m[v])detail=m[v];
+ else return;
+ active.haltKm=haltKm||'';
+ active.haltReason=detail;
+ setActiveRangier(active);
+ add('Halten / Warten',{detail:detail,rangierVorgang:active.von+' → '+active.nach,haltKm:haltKm||''});
  renderRole();
 }
 function continueMove(){
  let active=getActiveRangier();
  if(!active)return alert('Kein aktiver Rangiervorgang.');
- let choice=prompt('Rangiervorgang fortsetzen\nAktuell: '+active.von+' → '+active.nach+'\n\n1 = '+active.von+'\n2 = '+active.nach+'\n3 = Neue Angabe','2');
+ let start=active.haltKm||active.nach;
+ let choice=prompt('Rangiervorgang fortsetzen\nAktueller Halt: '+(active.haltKm?'km '+active.haltKm:'KM unbekannt')+'\nUrsprüngliches Ziel: km '+active.nach+'\n\n1 = weiter zum bisherigen Ziel '+active.nach+'\n2 = neues Ziel eingeben','1');
  if(choice===null)return;
- let start;
- if(choice==='1')start=active.von;
- else if(choice==='2')start=active.nach;
- else if(choice==='3'){
-   start=prompt('Weiter ab:','');
-   if(start===null||!start.trim())return;
-   start=start.trim();
- }else return;
- let target=prompt('Weiter nach:','');
- if(target===null||!target.trim())return;
- let next={von:start,nach:target.trim(),fahrart:active.fahrart,startedAt:active.startedAt};
+ let target;
+ if(choice==='1')target=active.nach;
+ else if(choice==='2'){target=prompt('Neues Ziel (KM):',active.nach);if(target===null||!target.trim())return;target=target.trim().replace(',','.');if(!/^\d+(?:\.\d+)?$/.test(target))return alert('Bitte ein gültiges Ziel eingeben.');}
+ else return;
+ let next={von:start,nach:target,fahrart:active.fahrart,startedAt:active.startedAt};
  add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart});
  setActiveRangier(next);
  renderRole();
@@ -321,7 +321,7 @@ function clearAllData(){
 function renderEvents(){
  let e=document.getElementById('events');
  let a=getShiftEvents();
- e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.date} ${x.time}</b> – ${esc(x.type)}${x.fahrart?' – '+esc(x.fahrart):''}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.';
+ e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.date} ${x.time}</b> – ${esc(x.type)}${x.fahrart?' – '+esc(x.fahrart):''}${x.haltKm?' – Halt km '+esc(x.haltKm):''}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.';
 }
 function createPlans(){
  let from=document.getElementById('pFrom').value,to=document.getElementById('pTo').value;
@@ -427,6 +427,7 @@ function exportPDF(){
   if(x.zielart) detailParts.push('Ziel: '+x.zielart);
   if(x.ort) detailParts.push('Ort: '+x.ort);
   if(x.kmEnd) detailParts.push('KM Ende: '+x.kmEnd);
+  if(x.haltKm) detailParts.push('KM Halt: '+x.haltKm);
   if(x.fahrart) detailParts.push(x.fahrart);
   if(x.detail) detailParts.push(x.detail);
   return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`;
