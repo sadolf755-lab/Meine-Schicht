@@ -165,7 +165,9 @@ body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wra
 </div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
-const KEY='meine_schicht_v3';let role='';let planWeekOffset=0;
+const KEY='meine_schicht_v3';const RANGIER_KEY='meine_schicht_aktiver_rangier_v1';let role='';let planWeekOffset=0;
+function getActiveRangier(){try{return JSON.parse(localStorage.getItem(RANGIER_KEY)||'null')}catch(e){return null}}
+function setActiveRangier(x){if(x)localStorage.setItem(RANGIER_KEY,JSON.stringify(x));else localStorage.removeItem(RANGIER_KEY)}
 const get=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}};const save=d=>localStorage.setItem(KEY,JSON.stringify(d));const pad=n=>String(n).padStart(2,'0');
 function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -194,23 +196,92 @@ function arrive(){
  let t=document.getElementById('arrivalType')?.value||'Einsatzort';
  let ort=t==='Einsatzort'?(document.getElementById('arrivalOrt')?.value||prompt('Einsatzort:','')):t;
  if(!ort)return;
- if(t!=='Einsatzort'){
-    let km=prompt('KM-Endstand bei Ankunft:','');
-    if(km===null||!km.trim())return;
-    if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Endstand eingeben.');
-    add('Angekommen',{zielart:t,ort,kmEnd:km.trim().replace(',','.')});
-  }else{
-   add('Angekommen',{zielart:t,ort});
- }
+ add('Angekommen',{zielart:t,ort});
 }
 function beginShift(){let r=prompt('Funktion:\n1 AZF./RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'AZF./RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
 function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
 function setupRole(){let e=document.getElementById('setup');if(role==='Sipo')e.innerHTML='<label>Zugeordnete SAKRA (optional)</label><input id="sS" placeholder="Name"><button class="small" onclick="saveSetup()">Speichern</button>';else if(role==='SAKRA')e.innerHTML='<label>Sipo dabei (optional)</label><input id="sS"><label>Einsatzbereich</label><select id="sA" onchange="sakFields()"><option value="">Bitte wählen</option><option>Bahnhof</option><option>Strecke</option><option>Bahnübergang</option></select><div id="sF"></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else if(role==='BüP')e.innerHTML='<label>BÜ / Bezeichnung</label><input id="bN"><label>Strecke</label><input id="bS"><label>km</label><input id="bK"><div class="row"><div><label>Fahrdienst 1</label><input id="f1"></div><div><label>Fahrdienst 2 optional</label><input id="f2"></div></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else e.innerHTML='<div class="muted">Rangier- und Baustellendokumentation.</div>'}
 function sakFields(){let v=document.getElementById('sA').value,e=document.getElementById('sF');e.innerHTML=v==='Bahnhof'?'<label>Bahnhof</label><input id="sP">':v==='Strecke'?'<label>Strecke</label><input id="sP"><label>km</label><input id="sK">':v==='Bahnübergang'?'<label>BÜ</label><input id="sP"><label>Strecke</label><input id="sT"><label>km</label><input id="sK">':''}
 function saveSetup(){let n=now(),d=get(),x={kind:'setup',date:n.date,time:n.time,role};if(role==='Sipo')x.sakra=document.getElementById('sS').value;if(role==='SAKRA'){x.sipo=document.getElementById('sS').value;x.area=document.getElementById('sA').value;x.place=document.getElementById('sP')?.value||'';x.km=document.getElementById('sK')?.value||'';x.strecke=document.getElementById('sT')?.value||''}if(role==='BüP'){x.bue=document.getElementById('bN').value;x.strecke=document.getElementById('bS').value;x.km=document.getElementById('bK').value;x.fd1=document.getElementById('f1').value;x.fd2=document.getElementById('f2').value}d.push(x);save(d);renderRole()}
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Zugmeldung erhalten\')">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else e.innerHTML='<div class="grid"><button class="small" onclick="move()">🚂 Rangieren</button><button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button><button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button><button class="small" onclick="add(\'Zug neu zusammengestellt\')">🔄 Neu zusammengestellt</button><button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button><button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button><button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button><button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button><button class="small" onclick="loadUnload()">📦 Laden / Entladen</button><button class="small" onclick="detail(\'Warten\',\'Grund\')">⏳ Warten</button><button class="small" onclick="detail(\'Störung\',\'Beschreibung\')">⚠️ Störung</button><button class="small" onclick="add(\'Zug fertig\')">✅ Zug fertig</button></div>';renderEvents()}
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Zugmeldung erhalten\')">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else {
+ let active=getActiveRangier();
+ let r=active
+ ? '<button class="small" onclick="continueMove()">▶️ Weiter</button><button class="small" onclick="holdMove()">⏸ Halten / Warten</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>'
+ : '<button class="small" onclick="move()">🚂 Rangieren</button>';
+ e.innerHTML='<div class="grid">'+r+
+ '<button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button>'+
+ '<button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button>'+
+ '<button class="small" onclick="add(\'Zug neu zusammengestellt\')">🔄 Neu zusammengestellt</button>'+
+ '<button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button>'+
+ '<button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button>'+
+ '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
+ '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>'+
+ '<button class="small" onclick="loadUnload()">📦 Laden / Entladen</button>'+
+ '<button class="small" onclick="holdMove()">⏸ Halten / Warten</button>'+
+ '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
+ '<button class="small" onclick="add(\'Zug fertig\')">✅ Zug fertig</button></div>';
+ if(active)e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(active.fahrart)+'</div>';
+ renderEvents()}
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
-function move(){let v=prompt('Von:','');if(v===null)return;let n=prompt('Nach:','');if(n===null)return;add('Rangieren',{von:v,nach:n,fahrart:confirm('Geschoben? OK = geschoben, Abbrechen = gezogen')?'geschoben':'gezogen'})}
+function chooseRangierart(){
+ let v=prompt('Rangierart:\n1 = Geschoben\n2 = Gezogen','1');
+ if(v==='1')return 'geschoben';
+ if(v==='2')return 'gezogen';
+ return null;
+}
+function move(){
+ let v=prompt('Von:','');
+ if(v===null||!v.trim())return;
+ let n=prompt('Nach:','');
+ if(n===null||!n.trim())return;
+ let fahrart=chooseRangierart();
+ if(!fahrart)return;
+ let active={von:v.trim(),nach:n.trim(),fahrart,startedAt:now()};
+ setActiveRangier(active);
+ add('Rangieren',{von:active.von,nach:active.nach,fahrart:active.fahrart});
+ renderRole();
+}
+function holdMove(){
+ let active=getActiveRangier();
+ if(!active)return alert('Kein aktiver Rangiervorgang. Bitte zuerst Rangieren starten.');
+ let v=prompt('Halten / Warten:\n1 = Zug / Fahrzeug\n2 = Mitarbeiter im Gleisbereich\n3 = Warten auf Zustimmung\n4 = Störung\n5 = Sonstiges','');
+ let m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};
+ if(v==='5'){
+   let d=prompt('Sonstiges:','');
+   if(d===null||!d.trim())return;
+   add('Halten / Warten',{detail:'Sonstiges – '+d.trim(),rangierVorgang:active.von+' → '+active.nach});
+ }else if(m[v]){
+   add('Halten / Warten',{detail:m[v],rangierVorgang:active.von+' → '+active.nach});
+ }else return;
+ renderRole();
+}
+function continueMove(){
+ let active=getActiveRangier();
+ if(!active)return alert('Kein aktiver Rangiervorgang.');
+ let choice=prompt('Rangiervorgang fortsetzen\nAktuell: '+active.von+' → '+active.nach+'\n\n1 = '+active.von+'\n2 = '+active.nach+'\n3 = Neue Angabe','2');
+ if(choice===null)return;
+ let start;
+ if(choice==='1')start=active.von;
+ else if(choice==='2')start=active.nach;
+ else if(choice==='3'){
+   start=prompt('Weiter ab:','');
+   if(start===null||!start.trim())return;
+   start=start.trim();
+ }else return;
+ let target=prompt('Weiter nach:','');
+ if(target===null||!target.trim())return;
+ let next={von:start,nach:target.trim(),fahrart:active.fahrart,startedAt:active.startedAt};
+ add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart});
+ setActiveRangier(next);
+ renderRole();
+}
+function endMove(){
+ let active=getActiveRangier();
+ if(!active)return;
+ add('Rangiervorgang beendet',{detail:active.von+' → '+active.nach+' · '+active.fahrart});
+ setActiveRangier(null);
+ renderRole();
+}
 function secureWagons(){
   let v=prompt('Wagen gesichert:\n1 = Handbremse\n2 = Hemmschuhe','1');
   if(v==='1')add('Wagen gesichert',{detail:'Handbremse'});
@@ -227,22 +298,29 @@ function loadUnload(){
  else if(v==='2')add('Nur entladen');
  else if(v==='3')add('Beladen + Entladen');
 }
-function renderEvents(){let e=document.getElementById('events');if(!e)return;let a=get().filter(x=>x.kind==='event'&&x.role===role);e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.time}</b> – ${esc(x.type)}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.'}
-function render(){document.getElementById('kw').textContent=kw();document.getElementById('kw2').textContent=kw();let a=get().filter(x=>x.kind==='event'&&x.date===now().date);document.getElementById('today').innerHTML=a.length?a.map(x=>`${x.time} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>'):'Noch keine Erfassung.';renderEvents()}
-function planWeekInfo(){let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+planWeekOffset*7);let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-day);let year=u.getUTCFullYear();let first=new Date(Date.UTC(year,0,1));let week=Math.ceil((((u-first)/86400000)+1)/7);return {year,week};}
-function isoWeekOf(s){let m=String(s).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);if(!m)return {year:0,week:0};let d=new Date(+m[3],+m[2]-1,+m[1]);d.setHours(12,0,0,0);let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-day);let year=u.getUTCFullYear(),first=new Date(Date.UTC(year,0,1));return {year,week:Math.ceil((((u-first)/86400000)+1)/7)};}
-function changePlanWeek(delta){planWeekOffset+=delta;selectedPlanDate="";renderPlans();}
-function togglePlanForm(){
- let f=document.getElementById('planForm');
- f.classList.toggle('hidden');
- if(!f.classList.contains('hidden')){
-   let d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+planWeekOffset*7);
-   let monday=new Date(d);let day=monday.getDay()||7;monday.setDate(monday.getDate()-(day-1));
-   let sunday=new Date(monday);sunday.setDate(sunday.getDate()+6);
-   const iso=x=>`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
-   document.getElementById('pFrom').value=iso(monday);document.getElementById('pTo').value=iso(sunday);
-   document.getElementById('pTimeFrom').value='14:00';document.getElementById('pTimeTo').value='22:30';
+function getShiftEvents(){
+ let all=load();
+ if(!all.length)return [];
+ let hasStart=all.some(x=>x.type==='Schichtbeginn');
+ let hasEnd=all.some(x=>x.type==='Schichtende');
+ if(hasStart&&!hasEnd){
+   let starts=all.filter(x=>x.type==='Schichtbeginn');
+   let s=starts[starts.length-1];
+   let startIndex=all.lastIndexOf(s);
+   return all.slice(startIndex);
  }
+ return all.filter(x=>x.date===today());
+}
+function clearAllData(){
+ if(!confirm('Alle gespeicherten Schichtdaten wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.'))return;
+ localStorage.removeItem(KEY);
+ setActiveRangier(null);
+ render();
+}
+function renderEvents(){
+ let e=document.getElementById('events');
+ let a=getShiftEvents();
+ e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.date} ${x.time}</b> – ${esc(x.type)}${x.fahrart?' – '+esc(x.fahrart):''}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.';
 }
 function createPlans(){
  let from=document.getElementById('pFrom').value,to=document.getElementById('pTo').value;
@@ -321,6 +399,7 @@ function exportPDF(){
   if(x.zielart) detailParts.push('Ziel: '+x.zielart);
   if(x.ort) detailParts.push('Ort: '+x.ort);
   if(x.kmEnd) detailParts.push('KM Ende: '+x.kmEnd);
+  if(x.fahrart) detailParts.push(x.fahrart);
   if(x.detail) detailParts.push(x.detail);
   return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`;
 }).join('');
@@ -333,6 +412,7 @@ function clearData(){
  if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
  const plans=get().filter(x=>x.kind==='plan');
  save(plans);
+ setActiveRangier(null);
  role='';
  render();
  renderPlans();
