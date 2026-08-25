@@ -347,6 +347,33 @@ function editPlan(id){
 }
 function delPlan(id){if(confirm('Einsatz löschen?')){save(get().filter(x=>x.id!==id));renderPlans()}}
 let selectedPlanDate='';
+function planWeekInfo(){
+ let d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+planWeekOffset*7);
+ let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+ let day=u.getUTCDay()||7; u.setUTCDate(u.getUTCDate()+4-day);
+ let year=u.getUTCFullYear(); let first=new Date(Date.UTC(year,0,1));
+ let week=Math.ceil((((u-first)/86400000)+1)/7);
+ return {year,week};
+}
+function isoWeekOf(s){
+ let m=String(s).match(/^(\d{2})\.(\d{2})\.(\d{4})$/); if(!m)return {year:0,week:0};
+ let d=new Date(+m[3],+m[2]-1,+m[1]); d.setHours(12,0,0,0);
+ let u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); let day=u.getUTCDay()||7;
+ u.setUTCDate(u.getUTCDate()+4-day); let year=u.getUTCFullYear(); let first=new Date(Date.UTC(year,0,1));
+ return {year,week:Math.ceil((((u-first)/86400000)+1)/7)};
+}
+function changePlanWeek(delta){planWeekOffset+=delta; selectedPlanDate=''; renderPlans();}
+function togglePlanForm(){
+ let f=document.getElementById('planForm'); f.classList.toggle('hidden');
+ if(!f.classList.contains('hidden')){
+  let d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+planWeekOffset*7);
+  let monday=new Date(d), day=monday.getDay()||7; monday.setDate(monday.getDate()-(day-1));
+  let sunday=new Date(monday); sunday.setDate(sunday.getDate()+6);
+  const iso=x=>`${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+  document.getElementById('pFrom').value=iso(monday); document.getElementById('pTo').value=iso(sunday);
+  document.getElementById('pTimeFrom').value='14:00'; document.getElementById('pTimeTo').value='22:30';
+ }
+}
 function renderPlans(){
  let w=planWeekInfo();document.getElementById('kw2').textContent=w.week;
  let a=get().filter(x=>x.kind==='plan').filter(x=>{let q=isoWeekOf(x.date);return q.year===w.year&&q.week===w.week});
