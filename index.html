@@ -653,6 +653,35 @@ input::placeholder{color:#6f8798}
 }
 </style>
 
+
+<style id="train-final-position">
+@media (max-width:600px){
+  .status-panel{
+    grid-template-columns:1fr 2px 1.55fr 78px !important;
+    gap:8px !important;
+  }
+  .train-art{
+    width:78px !important;
+    justify-self:center !important;
+    align-self:center !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    filter:drop-shadow(0 0 10px #22a8ff45);
+  }
+  .train-art img{
+    width:100% !important;
+    height:auto !important;
+    object-fit:contain !important;
+    transform:none !important;
+    display:block !important;
+  }
+}
+@media (max-width:390px){
+  .status-panel{grid-template-columns:1fr 2px 1.35fr 74px !important;}
+  .train-art{width:74px !important;}
+}
+</style>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -693,7 +722,15 @@ input::placeholder{color:#6f8798}
       <div id="statusOrt">Einsatzort: –</div>
     </div>
     <div class="train-art" aria-hidden="true">
-      <img src="meine-schicht-zug-status-transparent.webp" alt="" style="display:block;width:140%;height:auto;object-fit:contain;transform:translateX(-12%);">
+      <svg viewBox="0 0 100 100" role="img">
+        <path d="M50 5c-20 0-32 9-32 27v40c0 10 7 17 17 19l-8 7h10l8-6h10l8 6h10l-8-7c10-2 17-9 17-19V32C82 14 70 5 50 5z" fill="#1b6fae" stroke="#8ed7ff" stroke-width="2"/>
+        <rect x="27" y="17" width="46" height="29" rx="5" fill="#071522" stroke="#8ed7ff" stroke-width="2"/>
+        <path d="M33 39h14l-3-16H34zM53 39h14l-1-16H50z" fill="#a9ddf7"/>
+        <rect x="28" y="49" width="44" height="7" rx="3.5" fill="#dceeff"/>
+        <circle cx="30" cy="72" r="7" fill="#e9f6ff"/><circle cx="70" cy="72" r="7" fill="#e9f6ff"/>
+        <circle cx="31" cy="72" r="3" fill="#ff3b30"/><circle cx="69" cy="72" r="3" fill="#ff3b30"/>
+        <path d="M18 91h64" stroke="#22a8ff" stroke-width="3" opacity=".7"/>
+      </svg>
     </div>
   </div>
 
@@ -709,12 +746,12 @@ input::placeholder{color:#6f8798}
   <div class="fahrt-cockpit">
     <div class="fahrt-grid cockpit-round-grid">
       <button class="fahrt-btn departure-btn" onclick="departure()">🚗<span>ABFAHRT</span></button>
-      <button class="fahrt-btn arrival-btn" onclick="arrive()">📍<span>ANKUNFT</span></button>
+      <button class="fahrt-btn arrival-btn" onclick="arrive()">📍<span>ANGEKOMMEN</span></button>
       <button class="fahrt-btn shiftstart-btn" onclick="beginShift()">▶️<span>SCHICHT<br>BEGINNEN</span></button>
       <button class="fahrt-btn shiftend-btn" onclick="simpleEvent('Schichtende')">🛑<span>SCHICHT ENDE</span></button>
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
-    <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
+    <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>ANKUNFT / TAGESABSCHLUSS</span><b>›</b></button>
   </div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
 <nav class="bottom-nav" aria-label="Hauptnavigation">
