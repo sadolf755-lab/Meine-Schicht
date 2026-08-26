@@ -107,7 +107,285 @@ body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wra
     border-radius:14px !important;
   }
 }
-</style></head><body>
+</style>
+<style>
+/* =========================================================
+   MEINE SCHICHT – BAHN-COCKPIT DESIGN
+   Reines Design-Overlay: Funktionen/Logik bleiben unverändert.
+   ========================================================= */
+:root{
+  --cockpit-bg:#020b14;
+  --cockpit-panel:#071522;
+  --cockpit-panel-2:#0b1b2b;
+  --cockpit-line:#16344d;
+  --cockpit-text:#f4f8fb;
+  --cockpit-muted:#9eb0c1;
+  --neon-blue:#22a8ff;
+  --neon-green:#82ef36;
+  --neon-yellow:#ffc51c;
+  --neon-red:#ff3b30;
+  --neon-purple:#b35cff;
+}
+
+html{background:var(--cockpit-bg)}
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 50% -10%, #12304a 0%, transparent 38%),
+    linear-gradient(180deg,#020b14 0%,#03101b 55%,#020a12 100%);
+  color:var(--cockpit-text);
+  font-family:Arial,sans-serif;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:.16;
+  background:
+    linear-gradient(90deg,transparent 49.8%,#1d587a 50%,transparent 50.2%),
+    linear-gradient(0deg,transparent 49.8%,#1d587a 50%,transparent 50.2%);
+  background-size:44px 44px;
+  mask-image:linear-gradient(to bottom,black,transparent 42%);
+}
+
+.wrap{
+  max-width:620px;
+  margin:auto;
+  padding:14px 14px 28px;
+}
+
+.app-header{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin:4px 0 12px;
+  padding:4px 2px 8px;
+}
+.app-logo{
+  width:88px;
+  height:88px;
+  object-fit:contain;
+  flex-shrink:0;
+  border-radius:18px;
+  filter:drop-shadow(0 0 10px #008cff33);
+}
+.app-title h1{
+  margin:0 0 5px;
+  color:#fff;
+  font-size:clamp(30px,7vw,44px);
+  letter-spacing:.4px;
+}
+.app-title .sub{
+  color:#aebdcc;
+  margin:0;
+  line-height:1.25;
+}
+
+.card{
+  background:linear-gradient(145deg,#0a1a29,#06111d);
+  border:1px solid var(--cockpit-line);
+  border-radius:18px;
+  padding:15px;
+  margin:12px 0;
+  box-shadow:0 10px 30px #0008, inset 0 1px 0 #ffffff0b;
+}
+.card h2{
+  color:#eef5fa;
+  margin:3px 0 14px;
+}
+.wide{
+  width:100%;
+  background:linear-gradient(135deg,#0c2235,#0a1725);
+  color:#f5f9fc;
+  border:1px solid #1c5274;
+  text-align:left;
+  font-size:18px;
+  box-shadow:0 6px 20px #0006, inset 0 1px 0 #ffffff0a;
+}
+button{
+  color:#f5f9fc;
+  border:1px solid #20415a;
+  background:#0a1928;
+  border-radius:14px;
+  padding:14px 10px;
+  font-weight:700;
+  box-shadow:inset 0 1px 0 #ffffff0a,0 4px 12px #0005;
+  transition:transform .12s ease,filter .12s ease,box-shadow .12s ease;
+}
+button:active{
+  transform:scale(.98);
+}
+button:hover{
+  filter:brightness(1.08);
+}
+
+.role{
+  min-height:112px;
+  background:#091725;
+  color:#f6f9fc;
+  font-size:16px;
+}
+.role.az{border:1px solid var(--neon-blue);box-shadow:inset 0 0 18px #159dff14,0 0 10px #159dff12}
+.role.sak{border:1px solid var(--neon-yellow);box-shadow:inset 0 0 18px #ffc51c12,0 0 10px #ffc51c10}
+.role.buep{border:1px solid var(--neon-green);box-shadow:inset 0 0 18px #82ef3610,0 0 10px #82ef3610}
+.role.sipo{border:1px solid #71808e;box-shadow:inset 0 0 18px #ffffff06}
+
+.fahrt-card{
+  position:relative;
+  overflow:hidden;
+}
+.fahrt-card:after{
+  content:"";
+  position:absolute;
+  left:28%;
+  right:4%;
+  top:66px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,#176085,#2a9bd0,transparent);
+  opacity:.65;
+}
+.fahrt-grid{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  align-items:start;
+}
+.fahrt-btn{
+  min-width:0;
+  min-height:112px;
+  padding:12px 3px 10px;
+  border-radius:50%;
+  aspect-ratio:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:28px;
+  background:#061321;
+  position:relative;
+}
+.fahrt-btn span{
+  display:block;
+  font-size:11px;
+  line-height:1.08;
+  text-align:center;
+  max-width:76px;
+  color:#f5f8fb;
+  font-weight:800;
+}
+.fahrt-btn.green{border:2px solid var(--neon-green);box-shadow:0 0 14px #82ef3630,inset 0 0 18px #82ef3610}
+.fahrt-btn.blue{border:2px solid var(--neon-blue);box-shadow:0 0 14px #22a8ff30,inset 0 0 18px #22a8ff10}
+.fahrt-btn.yellow{border:2px solid var(--neon-yellow);box-shadow:0 0 14px #ffc51c30,inset 0 0 18px #ffc51c10}
+.fahrt-btn.red{border:2px solid var(--neon-red);box-shadow:0 0 14px #ff3b3030,inset 0 0 18px #ff3b3010}
+
+hr{
+  border:0;
+  border-top:1px solid #17354b;
+  margin:16px 0 11px;
+}
+.muted{color:var(--cockpit-muted);font-size:14px}
+.small{
+  background:#0a1b2a;
+  color:#eaf2f7;
+  border:1px solid #1d405a;
+}
+.fahrt-card > .small{
+  width:100%;
+  margin-top:10px;
+  text-align:left;
+  font-size:16px;
+}
+.danger{
+  background:#2b1015;
+  border-color:#7d2830;
+  color:#ffb8bd;
+}
+
+input,select,textarea{
+  background:#061321;
+  color:#f5f8fb;
+  border:1px solid #23445b;
+}
+input::placeholder,textarea::placeholder{color:#73889a}
+.item,.daydetail{
+  background:#071624;
+  border-color:#1c3b52;
+}
+.event{
+  border-left:4px solid var(--neon-blue);
+  background:#071825;
+}
+.settings{
+  background:linear-gradient(145deg,#091927,#06111d);
+}
+.weekdays .daybtn{
+  background:#071522;
+  border-color:#1d3a51;
+  color:#dbe7ef;
+}
+.weekdays .daybtn.has{
+  background:#0b261c;
+  border-color:#2c6f3a;
+}
+.weekdays .daybtn.selected{
+  outline:2px solid var(--neon-blue);
+  background:#092238;
+}
+.daydetail .detail-line,.plansub{
+  color:#91a5b5;
+}
+
+/* Other action colors use the cockpit palette */
+.green{background:#0b2417;color:#cfffad;border-color:#4c9c2d}
+.blue{background:#082239;color:#b9e6ff;border-color:#1978ad}
+.yellow{background:#2b2207;color:#ffe59a;border-color:#b28a14}
+.red{background:#2b0e12;color:#ffb5b8;border-color:#9d2e37}
+.az{background:#071a2a}
+.sak{background:#211b06}
+.buep{background:#0b2115}
+.sipo{background:#111923}
+
+/* Make the main dashboard feel like one cockpit */
+#home > .card:first-of-type{
+  background:linear-gradient(145deg,#081b2b,#06121e);
+}
+#home > .card:nth-of-type(2){
+  background:linear-gradient(145deg,#061521,#07111c);
+}
+
+/* Compact screens */
+@media(max-width:600px){
+  .wrap{padding:10px 10px 22px}
+  .app-header{gap:10px}
+  .app-logo{width:76px;height:76px;border-radius:16px}
+  .app-title h1{font-size:32px}
+  .app-title .sub{font-size:14px}
+  .role{min-height:104px}
+  .fahrt-grid{gap:5px}
+  .fahrt-btn{
+    min-height:78px;
+    font-size:22px;
+    padding:8px 1px;
+  }
+  .fahrt-btn span{
+    font-size:9px;
+    max-width:62px;
+  }
+  .card{border-radius:17px;padding:13px}
+}
+
+@media(max-width:390px){
+  .fahrt-btn{min-height:70px}
+  .fahrt-btn span{font-size:8.5px}
+}
+</style>
+</head><body>
 <style>
 @media (max-width: 600px) {
   .kw-header {
@@ -127,7 +405,7 @@ body{margin:0;background:#f2f4f7;color:#17202a;font-family:Arial,sans-serif}.wra
 </style>
 <div class="wrap"><div class="app-header"><img src="meine-schicht-icon-192.png" alt="Meine Schicht" class="app-logo"><div class="app-title"><h1>Meine Schicht</h1><div class="sub">Wenig Eingaben – möglichst vollständige Dokumentation.</div></div></div>
 <section id="home"><button class="wide" onclick="show('plan')">📅 Einsätze KW <span id="kw"></span></button><div class="card"><div class="grid"><button class="role az" onclick="openRole('AZF./RbBau')">🚂<br>AZF. / RbBau</button><button class="role sak" onclick="openRole('SAKRA')">🦺<br>SAKRA</button><button class="role buep" onclick="openRole('BüP')">🚧<br>BüP</button><button class="role sipo" onclick="openRole('Sipo')">🦺<br>Sipo</button></div></div>
-<div class="card"><h2>Fahrt & Schicht</h2><div class="grid"><button class="green" onclick="departure()">🚗<br>ABFAHRT</button><button class="blue" onclick="arrive()">📍<br>ANGEKOMMEN</button><button class="yellow" onclick="beginShift()">▶️<br>SCHICHT BEGINNEN</button><button class="red" onclick="simpleEvent('Schichtende')">🛑<br>SCHICHT ENDE</button></div><hr><div class="muted">Start- und Endort werden direkt bei ABFAHRT bzw. ANKUNFT / TAGESABSCHLUSS abgefragt.</div><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div>
+<div class="card fahrt-card"><h2>Fahrt &amp; Schicht</h2><div class="grid fahrt-grid"><button class="green fahrt-btn departure-btn" onclick="departure()">🚗<span>ABFAHRT</span></button><button class="blue fahrt-btn arrival-btn" onclick="arrive()">📍<span>ANGEKOMMEN</span></button><button class="yellow fahrt-btn shiftstart-btn" onclick="beginShift()">▶️<span>SCHICHT BEGINNEN</span></button><button class="red fahrt-btn shiftend-btn" onclick="simpleEvent('Schichtende')">🛑<span>SCHICHT ENDE</span></button></div><hr><div class="muted">Start- und Endort werden direkt bei ABFAHRT bzw. ANKUNFT / TAGESABSCHLUSS abgefragt.</div><button class="small" onclick="homeArrival()">🏠 ANKUNFT / TAGESABSCHLUSS</button></div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div></section>
 <section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
 <div class="card">
