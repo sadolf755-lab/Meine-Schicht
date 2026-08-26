@@ -518,6 +518,13 @@ input::placeholder{color:#6f8798}
   .cockpit-note{font-size:12px}
 }
 </style>
+
+<style>
+.vest-icon{display:inline-flex;width:54px;height:54px;align-items:center;justify-content:center;margin-bottom:2px}
+.vest-icon svg{width:54px;height:54px;filter:drop-shadow(0 0 7px #ffb40038)}
+.train-art{width:96px!important}
+@media(max-width:420px){.vest-icon,.vest-icon svg{width:50px;height:50px}.train-art{width:82px!important}}
+</style>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -558,14 +565,30 @@ input::placeholder{color:#6f8798}
       <div id="statusOrt">Einsatzort: –</div>
     </div>
     <div class="train-art" aria-hidden="true">
-      <svg viewBox="0 0 100 100" role="img">
-        <path d="M50 5c-20 0-32 9-32 27v40c0 10 7 17 17 19l-8 7h10l8-6h10l8 6h10l-8-7c10-2 17-9 17-19V32C82 14 70 5 50 5z" fill="#1b6fae" stroke="#8ed7ff" stroke-width="2"/>
-        <rect x="27" y="17" width="46" height="29" rx="5" fill="#071522" stroke="#8ed7ff" stroke-width="2"/>
-        <path d="M33 39h14l-3-16H34zM53 39h14l-1-16H50z" fill="#a9ddf7"/>
-        <rect x="28" y="49" width="44" height="7" rx="3.5" fill="#dceeff"/>
-        <circle cx="30" cy="72" r="7" fill="#e9f6ff"/><circle cx="70" cy="72" r="7" fill="#e9f6ff"/>
-        <circle cx="31" cy="72" r="3" fill="#ff3b30"/><circle cx="69" cy="72" r="3" fill="#ff3b30"/>
-        <path d="M18 91h64" stroke="#22a8ff" stroke-width="3" opacity=".7"/>
+      <svg viewBox="0 0 120 120" role="img" aria-label="Zug">
+        <defs>
+          <linearGradient id="trainBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset=".72" stop-color="#d9e1e7"/>
+            <stop offset="1" stop-color="#aab7c1"/>
+          </linearGradient>
+          <linearGradient id="trainGlass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#07192a"/>
+            <stop offset="1" stop-color="#173a54"/>
+          </linearGradient>
+          <filter id="trainGlow"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <path d="M60 8c-22 0-35 11-35 31v42c0 11 7 19 18 22l-8 8h13l7-7h10l7 7h13l-8-8c11-3 18-11 18-22V39C95 19 82 8 60 8z"
+              fill="url(#trainBody)" stroke="#eaf4fb" stroke-width="2.5"/>
+        <path d="M35 23c7-7 16-10 25-10s18 3 25 10l-4 28H39z" fill="url(#trainGlass)" stroke="#8ed7ff" stroke-width="2"/>
+        <path d="M41 47l-3-20h17v20zM60 47V27h18l-3 20z" fill="#0b2337" opacity=".85"/>
+        <rect x="41" y="51" width="38" height="8" rx="4" fill="#b9c9d4"/>
+        <circle cx="38" cy="75" r="8" fill="#f4f8fb" stroke="#d6e4ec" stroke-width="1.5"/>
+        <circle cx="82" cy="75" r="8" fill="#f4f8fb" stroke="#d6e4ec" stroke-width="1.5"/>
+        <circle cx="38" cy="75" r="4" fill="#ff4a3d" filter="url(#trainGlow)"/>
+        <circle cx="82" cy="75" r="4" fill="#ff4a3d" filter="url(#trainGlow)"/>
+        <path d="M45 91h30" stroke="#5e7180" stroke-width="3" stroke-linecap="round"/>
+        <path d="M35 106l25-12 25 12M43 114l17-9 17 9" fill="none" stroke="#1599e8" stroke-width="3" stroke-linecap="round"/>
       </svg>
     </div>
   </div>
@@ -573,9 +596,9 @@ input::placeholder{color:#6f8798}
   <div class="section-label">AUFGABENBEREICHE</div>
   <div class="card role-card"><div class="grid role-grid">
     <button class="role az" onclick="openRole('AZF./RbBau')">🚂<br><span>AZF. / RbBau</span></button>
-    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
+    <button class="role sak" onclick="openRole('SAKRA')"><span class="vest-icon yellow-vest" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M22 7h20l5 12 8 7-8 9-5-4v23H22V31l-5 4-8-9 8-7 5-12z" fill="#ffb400" stroke="#ffd95a" stroke-width="2"/><path d="M22 7l10 12L42 7M32 19v35M19 35h26M17 45h30" fill="none" stroke="#fff2a8" stroke-width="3"/></svg></span><span>SAKRA</span></button>
     <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
-    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
+    <button class="role sipo" onclick="openRole('Sipo')"><span class="vest-icon yellow-vest" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M22 7h20l5 12 8 7-8 9-5-4v23H22V31l-5 4-8-9 8-7 5-12z" fill="#ffb400" stroke="#ffd95a" stroke-width="2"/><path d="M22 7l10 12L42 7M32 19v35M19 35h26M17 45h30" fill="none" stroke="#fff2a8" stroke-width="3"/></svg></span><span>Sipo</span></button>
   </div></div>
 
   <div class="section-label section-line">FAHRT &amp; SCHICHT <span></span></div>
