@@ -652,7 +652,18 @@ function chooseOrt(promptText,includeEinsatzort=false){
  let options=includeEinsatzort ? '1 = Hauptwohnung\n2 = Zweite Wohnung / Unterkunft\n3 = Büro\n4 = Einsatzort\n5 = Anderer Ort' : '1 = Hauptwohnung\n2 = Zweite Wohnung / Unterkunft\n3 = Büro\n4 = Anderer Ort';
  let v=prompt(promptText+'\n\n'+options,'1');
  if(v===null)return null;
- let m=includeEinsatzort ? {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro','4':'Einsatzort'} : {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'};
+ if(includeEinsatzort && v==='4'){
+   // Beim Einsatzort den für heute hinterlegten Einsatzplan übernehmen.
+   // Wenn kein passender Plan vorhanden ist, wird einmalig der Ort abgefragt.
+   let todayDate=today(), plans=get().filter(x=>x.kind==='plan' && x.date===todayDate && x.ort);
+   if(role) plans=plans.filter(x=>x.role===role);
+   let planned=plans[0]?.ort||'';
+   if(planned)return planned;
+   let o=prompt('Einsatzort:','');
+   if(o===null||!o.trim())return null;
+   return o.trim();
+ }
+ let m=includeEinsatzort ? {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'} : {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'};
  if(v==='5' || (!includeEinsatzort && v==='4')){let o=prompt('Ort:','');if(o===null||!o.trim())return null;return o.trim();}
  return m[v]||null;
 }
