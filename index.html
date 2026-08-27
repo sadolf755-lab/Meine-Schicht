@@ -427,7 +427,7 @@ body:after{
 }
 .cockpit-wide .chev{position:absolute;right:18px;font-size:32px;top:7px;color:#8bb8d4}
 .status-panel{
-  position:relative;display:grid;grid-template-columns:1fr 2px 1.65fr 94px;gap:15px;
+  position:relative;display:grid;grid-template-columns:1fr 2px 1.65fr 136px;gap:15px;
   align-items:center;margin:12px 0 20px;padding:18px 18px;border:1px solid #17445f;border-radius:20px;
   background:linear-gradient(135deg,#061522,#071b2b);box-shadow:0 0 24px #00101a,0 0 18px #0aa7ff0b inset;overflow:hidden;
 }
@@ -438,7 +438,7 @@ body:after{
 .status-info{min-width:0}.status-live{display:flex;align-items:center;gap:8px;margin:7px 0 6px;color:var(--green);font-size:18px;font-weight:800}
 .live-dot{width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
 #statusRole,#statusOrt{font-size:14px;color:#c1d0db;margin-top:4px}
-.train-art{width:88px;justify-self:end;filter:drop-shadow(0 0 10px #22a8ff45);z-index:1}
+.train-art{width:136px;height:136px;justify-self:end;align-self:center;filter:drop-shadow(0 0 10px #22a8ff45);z-index:1;overflow:hidden}
 .section-label{font-size:13px;letter-spacing:.8px;color:#c4d3de;margin:12px 4px 8px;font-weight:800}
 .section-line{display:flex;align-items:center;gap:12px;margin-top:16px}
 .section-line span{height:1px;flex:1;background:linear-gradient(90deg,#1b5574,#1b557400);position:relative}
@@ -693,7 +693,7 @@ input::placeholder{color:#6f8798}
       <div id="statusOrt">Einsatzort: –</div>
     </div>
     <div class="train-art" aria-hidden="true">
-      <img src="meine-schicht-zug-status-transparent.webp" alt="" style="display:block;width:140%;height:auto;object-fit:contain;transform:translateX(-70%);">
+      <img src="meine-schicht-zug-status-transparent.webp" alt="" style="display:block;width:100%;height:100%;object-fit:contain;transform:none;">
     </div>
   </div>
 
