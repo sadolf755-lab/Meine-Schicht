@@ -693,7 +693,7 @@ input::placeholder{color:#6f8798}
       <div id="statusOrt">Einsatzort: –</div>
     </div>
     <div class="train-art" aria-hidden="true">
-      <img src="meine-schicht-zug-status-transparent.webp" alt="" style="display:block;width:140%;height:auto;object-fit:contain;transform:translateX(8%);">
+      <img src="meine-schicht-zug-status-transparent.webp" alt="" style="display:block;width:140%;height:auto;object-fit:contain;transform:translateX(-70%);">
     </div>
   </div>
 
@@ -815,7 +815,7 @@ function saveSetup(){let n=now(),d=get(),x={kind:'setup',date:n.date,time:n.time
 function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Zugmeldung erhalten\')">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else {
  let active=getActiveRangier();
  let r=active
- ? '<button class="small" onclick="continueMove()">▶️ Weiter</button><button class="small" onclick="holdMove()">⏸ Halten / Warten</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>'
+ ? '<button class="small" onclick="continueMove()">▶️ Weiter</button><button class="small" onclick="changeDirection()">🔄 Richtungswechsel</button><button class="small" onclick="holdMove()">⏸ Halten / Warten</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>'
  : '<button class="small" onclick="move()">🚂 Rangieren</button>';
  e.innerHTML='<div class="grid">'+r+
  '<button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button>'+
@@ -914,6 +914,34 @@ function holdMove(){
  add('Halten / Warten',{detail:detail,rangierVorgang:active.von+' → '+active.nach,haltKm:haltKm||''});
  renderRole();
 }
+function changeDirection(){
+ let active=getActiveRangier();
+ if(!active)return alert('Kein aktiver Rangiervorgang.');
+
+ let oldArt=active.fahrart;
+ let newArt=oldArt==='geschoben'?'gezogen':'geschoben';
+
+ let ok=confirm(
+   'Rangierart wechseln?\\n\\n'+
+   (oldArt==='geschoben'?'🟢 Geschoben':'🔵 Gezogen')+
+   ' → '+
+   (newArt==='geschoben'?'🟢 Geschoben':'🔵 Gezogen')+
+   '\\n\\nDer bestehende Rangiervorgang läuft weiter.'
+ );
+ if(!ok)return;
+
+ active.fahrart=newArt;
+ setActiveRangier(active);
+
+ add('Richtungswechsel',{
+   detail:(oldArt==='geschoben'?'Geschoben':'Gezogen')+' → '+(newArt==='geschoben'?'Geschoben':'Gezogen'),
+   rangierVorgang:active.von+' → '+active.nach,
+   fahrartAlt:oldArt,
+   fahrartNeu:newArt
+ });
+ renderRole();
+}
+
 function continueMove(){
  let active=getActiveRangier();
  if(!active)return alert('Kein aktiver Rangiervorgang.');
