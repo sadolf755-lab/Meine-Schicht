@@ -836,10 +836,10 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  '<button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button>'+
  '<button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button>'+
  '<button class="small" onclick="loadUnload()">📦 Laden / Entladen</button>'+
- '<button class="small" onclick="add(\'Zug neu zusammengestellt\')">🔄 Neu zusammengestellt</button>'+
+ '<button class="small" onclick="startTrainAssembly()">🔄 Zug neu zusammenstellen</button>'+
  '<button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button>'+
  '<button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button>'+
- '<button class="small" onclick="add(\'Zug fertig\')">✅ Zug fertig</button>'+
+ '<button class="small" onclick="finishTrainAssembly()">✅ Zug fertig</button>'+
  '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>'+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
@@ -848,6 +848,15 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  renderEvents()}
 }
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
+function startTrainAssembly(){
+ let ok=confirm('🔄 Zug neu zusammenstellen\n\nRangierarbeiten zur Bildung des Zuges beginnen.\n\nWenn die Zugbildung abgeschlossen ist, bitte ✅ Zug fertig drücken.');
+ if(!ok)return;
+ add('Zug neu zusammenstellen');
+}
+function finishTrainAssembly(){
+ const text='Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.';
+ add('Zug fertig',{detail:text});
+}
 function recordIncident(){
  let v=prompt('Art des Vorfalls / Ereignisses:\n\n1 = Berührung / Anstoß\n2 = Gegenstand im Fahrweg\n3 = Gegenstand nicht profilfrei abgestellt\n4 = Beschädigung\n5 = Sonstiges','');
  if(v===null)return;
