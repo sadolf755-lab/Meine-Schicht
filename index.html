@@ -524,6 +524,13 @@ input::placeholder{color:#6f8798}
    Keeps the Bahn-Cockpit design, colors and functions intact.
    Only reduces vertical spacing so the action row + day-end button fit better. */
 @media (max-width: 600px) {
+  .status-panel{
+    grid-template-columns:1fr 2px 1.55fr 136px !important;
+  }
+  .train-art{
+    width:136px !important;
+    height:136px !important;
+  }
   .wrap{
     padding: 4px 12px 86px !important;
   }
