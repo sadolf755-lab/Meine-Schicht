@@ -835,16 +835,47 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
 }
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
 function recordIncident(){
- let v=prompt('Vorfall / Ereignis:\n\nKurz beschreiben, was passiert ist:','');
- if(v===null||!v.trim())return;
- let ort=prompt('Ort / Gleis / Bereich (optional):','');
- if(ort===null)return;
- let weitere=prompt('Weitere Angaben / Beteiligte (optional):','');
- if(weitere===null)return;
- let detail=v.trim();
- if(ort.trim())detail+=' · Ort: '+ort.trim();
- if(weitere.trim())detail+=' · Weitere Angaben: '+weitere.trim();
- add('Vorfall / Ereignis',{detail});
+ let v=prompt('Art des Vorfalls / Ereignisses:\n\n1 = Berührung / Anstoß\n2 = Gegenstand im Fahrweg\n3 = Gegenstand nicht profilfrei abgestellt\n4 = Beschädigung\n5 = Sonstiges','');
+ if(v===null)return;
+ let m={
+   '1':'Berührung / Anstoß',
+   '2':'Gegenstand im Fahrweg',
+   '3':'Gegenstand nicht profilfrei abgestellt',
+   '4':'Beschädigung'
+ };
+ let art='';
+ if(v==='5'){
+   art=prompt('Sonstige Art des Vorfalls:','');
+   if(art===null||!art.trim())return;
+   art='Sonstiges – '+art.trim();
+ }else if(m[v]) art=m[v];
+ else return alert('Bitte eine gültige Auswahl treffen (1–5).');
+
+ let passiert=prompt('Was ist passiert?\n\nFreies Textfeld:','');
+ if(passiert===null||!passiert.trim())return;
+
+ let km=prompt('Position / KM (optional):','');
+ if(km===null)return;
+
+ let massnahme=prompt('Maßnahme / Ergebnis\n\nFreies Textfeld:','');
+ if(massnahme===null)return;
+
+ let beteiligte=prompt('Beteiligte / Verursacher (optional):','');
+ if(beteiligte===null)return;
+
+ let detailParts=['Art: '+art,'Was ist passiert: '+passiert.trim()];
+ if(km.trim())detailParts.push('Position / KM: '+km.trim());
+ if(massnahme.trim())detailParts.push('Maßnahme / Ergebnis: '+massnahme.trim());
+ if(beteiligte.trim())detailParts.push('Beteiligte / Verursacher: '+beteiligte.trim());
+
+ add('Vorfall / Ereignis',{
+   detail:detailParts.join(' · '),
+   incidentType:art,
+   incidentDescription:passiert.trim(),
+   incidentKm:km.trim(),
+   incidentAction:massnahme.trim(),
+   incidentParties:beteiligte.trim()
+ });
 }
 function chooseRangierart(){
  let v=prompt('Rangierart:\n1 = Geschoben\n2 = Gezogen','1');
