@@ -998,7 +998,7 @@ function loadUnload(){
  else if(v==='3')add('Beladen + Entladen');
 }
 function getShiftEvents(){
- let all=load();
+ let all=load().filter(x=>x.kind==='event');
  if(!all.length)return [];
  let hasStart=all.some(x=>x.type==='Schichtbeginn');
  let hasEnd=all.some(x=>x.type==='Schichtende');
