@@ -13,168 +13,189 @@ h2{margin:2px 0 12px}button,select,input{font:inherit}button{border:1px solid #2
 <div class="header"><div class="logo">🚂</div><div><h1>MEINE SCHICHT</h1><div class="sub">🧪 Simulationsprogramm – getrennt von echten Daten</div></div></div>
 
 <div class="card">
-<h2>🧪 Simulation</h2>
-<div class="status"><b id="simStatus">Bereit</b><div class="muted" id="simInfo">Noch keine Simulation gestartet.</div></div>
+<h2>🧪 Virtuelle Schicht</h2>
+<div class="status"><b id="simStatus">Bereit</b><div class="muted" id="simInfo">Schicht festlegen und anschließend Ereignisse mit eigenen Uhrzeiten eintragen.</div></div>
 <div class="row">
 <label>Datum<input id="simDate" type="date"></label>
-<label>Startzeit<input id="simStart" type="time" value="07:00"></label>
+<label>Schichtbeginn<input id="simStart" type="time" value="07:00"></label>
 </div>
-<label>Einsatzart</label>
-<select id="scenario" onchange="updateEventButtons()">
-<option value="rangier">🚂 Normaler Rangiereinsatz</option>
-<option value="zugbildung">🔄 Zug neu zusammenstellen</option>
-<option value="richtungswechsel">🔄 Rangieren mit Richtungswechsel</option>
-<option value="warten">⏸ Halten / Warten</option>
-<option value="vorfall">⚠️ Vorfall / Ereignis</option>
-<option value="sipo">🦺 Sipo</option>
-<option value="sakra">🦺 SAKRA</option>
-<option value="buep">🚧 BüP</option>
-<option value="komplett">🧪 Kompletter AZF-Test</option>
-</select>
+<div class="row">
+<label>Schichtende<input id="simEnd" type="time" value="15:00"></label>
+<label>Einsatzart<select id="role" onchange="updateEventButtons()">
+<option>SAKRA</option><option>AZF./RbBau</option><option>BüP</option><option>Sipo</option>
+</select></label>
+</div>
+<label>Bahnhof / Bereich<input id="location" value="Bahnhof – 10 Gleise"></label>
 <div class="grid" style="margin-top:8px">
-<button class="purple" onclick="runScenario()">▶️ Simulation starten</button>
-<button onclick="clearSim()">🗑️ Simulation löschen</button>
+<button class="purple" onclick="addShiftStart()">▶️ Schichtbeginn eintragen</button>
+<button onclick="addShiftEnd()">⏹ Schichtende eintragen</button>
 </div>
 </div>
 
 <div class="card">
-<h2>⚙️ Einzelereignisse testen</h2>
-<div id="eventButtons" class="grid"></div>
+<h2>➕ Ereignis eintragen</h2>
+<div class="row">
+<label>Uhrzeit<input id="eventTime" type="time" value="07:20"></label>
+<label>Tätigkeit<select id="eventType" onchange="updatePlaceholder()"></select></label>
+</div>
+<label>Zusatz / Details<input id="eventDetail" placeholder="z. B. Gleis 1 – UV-Sperrung angefordert"></label>
+<button class="purple" style="width:100%;margin-top:8px" onclick="addManualEvent()">➕ Zur Zeitleiste hinzufügen</button>
+</div>
+</div>
+
+</div>
+
+
+<div class="card">
+<h2>3. 🕒 Schicht-Zeitleiste</h2>
+<div class="muted">Ereignisse werden ausschließlich zu den von dir eingetragenen Uhrzeiten simuliert.</div>
+<div id="timeline" class="timeline"><div class="empty">Noch keine Ereignisse eingetragen.</div></div>
+<div class="toolbar" style="margin-top:10px">
+<button class="purple" onclick="playSimulation()">▶️ Simulation abspielen</button>
+<button onclick="sortTimeline()">↕️ Zeit sortieren</button>
+<button class="red" onclick="clearSim()">🗑️ Alles löschen</button>
+</div>
 </div>
 
 <div class="card">
-<h2>📋 Simulationsbericht</h2>
+<h2>4. 📋 Simulationsbericht</h2>
 <div id="events" class="muted">Noch keine Simulationsdaten.</div>
 </div>
 
 <div class="card">
-<h2>📊 Testkontrolle</h2>
+<h2>5. 💾 Testdaten</h2>
 <div id="summary" class="muted">Noch keine Daten.</div>
-<button class="full" onclick="exportJSON()">💾 Simulationsdaten exportieren</button>
+<div class="toolbar"><button onclick="exportJSON()">💾 JSON exportieren</button><button onclick="importJSON()">📥 JSON importieren</button><input id="file" class="hidden" type="file" accept=".json" onchange="readJSON(event)"></div>
 </div>
 </div>
 
 <script>
-const KEY='meine_schicht_simulation_v1';
-const pad=n=>String(n).padStart(2,'0');
+const KEY='meine_schicht_simulation_v3';
+let events=load();
+
+const TYPES={
+ 'SAKRA':['Schichtbeginn','Sperrgespräch','UV-Sperrung angefordert','UV-Sperrung erhalten','UV-Sperrung nicht erhalten','Halten / Warten','UV-Sperrung aufgehoben','Störung','Vorfall / Ereignis','Schichtende'],
+ 'AZF./RbBau':['Schichtbeginn','Rangieren','Halten / Warten','Ankuppeln','Abkuppeln','🔄 Zug neu zusammenstellen','🔄 Richtungswechsel','Zug fertig','Wagenliste erstellt','Bremsprobe durchgeführt','Wagen / Lok abgestellt','Wagen gesichert','Störung','Vorfall / Ereignis','Rangiervorgang beendet','Schichtende'],
+ 'BüP':['Schichtbeginn','Zugmeldung erhalten','Sicherung durchgeführt','Zug vorbeigefahren','Sicherung aufgehoben','Störung','Vorfall / Ereignis','Schichtende'],
+ 'Sipo':['Schichtbeginn','Sicherung übernommen','Sicherungsmaßnahme durchgeführt','Zugmeldung erhalten','Zug vorbeigefahren','Sicherung aufgehoben','Störung','Vorfall / Ereignis','Schichtende']
+};
+
+function pad(n){return String(n).padStart(2,'0')}
 function todayISO(){let d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+function save(){localStorage.setItem(KEY,JSON.stringify(events))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
 document.getElementById('simDate').value=todayISO();
 
-function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
-function save(a){localStorage.setItem(KEY,JSON.stringify(a))}
-function fmtDate(s){let p=s.split('-');return p[2]+'.'+p[1]+'.'+p[0]}
-function addEvent(type,role,extra={}){
- let d=load(),date=extra.date||document.getElementById('simDate').value||todayISO();
- let time=extra.time||document.getElementById('simStart').value||'07:00';
- let e={kind:'event',simulation:true,date,time,type,role,...extra};
- d.push(e);save(d);render();
-}
-
 function updateEventButtons(){
- const name=document.getElementById('scenario').value;
- const box=document.getElementById('eventButtons');
-
- const sets={
-  rangier:[
-   ["🚂 Rangieren",()=>addEvent('Rangieren','AZF./RbBau',{von:'Gleis 30',nach:'Gleis 42',fahrart:'geschoben'})],
-   ["⏸ Halten / Warten",()=>addEvent('Halten / Warten','AZF./RbBau',{detail:'Warten auf Zustimmung',haltKm:'25.6'})],
-   ["🔗 Ankuppeln",()=>addEvent('Ankuppeln','AZF./RbBau')],
-   ["🔓 Abkuppeln",()=>addEvent('Abkuppeln','AZF./RbBau')],
-   ["🚂 Wagen gesichert",()=>addEvent('Wagen gesichert','AZF./RbBau',{detail:'Hemmschuhe'})],
-   ["⚠️ Störung",()=>addEvent('Störung','AZF./RbBau')]
-  ],
-  zugbildung:[
-   ["🔄 Zug neu zusammenstellen",()=>addEvent('Zug neu zusammenstellen','AZF./RbBau')],
-   ["🚂 Rangieren",()=>addEvent('Rangieren','AZF./RbBau',{von:'Gleis 10',nach:'Gleis 14',fahrart:'gezogen'})],
-   ["🔗 Ankuppeln",()=>addEvent('Ankuppeln','AZF./RbBau')],
-   ["🔓 Abkuppeln",()=>addEvent('Abkuppeln','AZF./RbBau')],
-   ["📋 Wagenliste",()=>addEvent('Wagenliste erstellt','AZF./RbBau')],
-   ["🛑 Bremsprobe",()=>addEvent('Bremsprobe durchgeführt','AZF./RbBau')],
-   ["✅ Zug fertig",()=>addEvent('Zug fertig','AZF./RbBau',{detail:'Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.'})]
-  ],
-  richtungswechsel:[
-   ["🚂 Rangieren",()=>addEvent('Rangieren','AZF./RbBau',{von:'Gleis 30',nach:'Weiche 20',fahrart:'geschoben'})],
-   ["🔄 Richtungswechsel",()=>addEvent('Richtungswechsel','AZF./RbBau',{detail:'Geschoben → Gezogen'})],
-   ["⏹ Rangiervorgang beendet",()=>addEvent('Rangiervorgang beendet','AZF./RbBau')]
-  ],
-  warten:[
-   ["⏸ Halten / Warten",()=>addEvent('Halten / Warten','AZF./RbBau',{detail:'Warten auf Zustimmung',haltKm:'12.4'})],
-   ["🚂 Rangieren",()=>addEvent('Rangieren','AZF./RbBau',{von:'km 12.4',nach:'Gleis 42',fahrart:'geschoben'})],
-   ["⚠️ Störung",()=>addEvent('Störung','AZF./RbBau')]
-  ],
-  vorfall:[
-   ["⚠️ Vorfall / Ereignis",()=>addEvent('Vorfall / Ereignis','AZF./RbBau',{detail:'Testvorfall'})],
-   ["🚂 Rangieren",()=>addEvent('Rangieren','AZF./RbBau',{von:'Gleis 30',nach:'Abstellgleis 42',fahrart:'gezogen'})]
-  ],
-  sipo:[
-   ["▶️ Sipo Beginn",()=>addEvent('Sipo Schichtbeginn','Sipo')],
-   ["🛑 Sipo Ende",()=>addEvent('Sipo Schichtende','Sipo')]
-  ],
-  sakra:[
-   ["🗣️ Sperrgespräch",()=>addEvent('Sperrgespräch','SAKRA')],
-   ["🔒 Sperrung erhalten",()=>addEvent('Sperrung erhalten','SAKRA',{detail:'UV-Sperrung erhalten'})],
-   ["❌ Nicht erhalten",()=>addEvent('Nicht erhalten','SAKRA',{detail:'UV-Sperrung nicht erhalten'})],
-   ["🔓 Sperrung aufgehoben",()=>addEvent('Sperrung aufgehoben','SAKRA')],
-   ["⏸ Warten",()=>addEvent('Halten / Warten','SAKRA',{detail:'Warten auf UV-Sperrung'})]
-  ],
-  buep:[
-   ["📞 Zugmeldung",()=>addEvent('Zugmeldung erhalten','BüP')],
-   ["🛑 Sicherung",()=>addEvent('Sicherung','BüP')],
-   ["🚆 Zug vorbei",()=>addEvent('Zug vorbei','BüP')],
-   ["✅ Aufgehoben",()=>addEvent('Aufgehoben','BüP')]
-  ],
-  komplett:[
-   ["🚂 Rangieren",()=>addEvent('Rangieren','AZF./RbBau',{von:'Gleis 30',nach:'Gleis 42',fahrart:'geschoben'})],
-   ["⏸ Halten / Warten",()=>addEvent('Halten / Warten','AZF./RbBau',{detail:'Warten auf Zustimmung'})],
-   ["🔄 Zug neu zusammenstellen",()=>addEvent('Zug neu zusammenstellen','AZF./RbBau')],
-   ["🔄 Richtungswechsel",()=>addEvent('Richtungswechsel','AZF./RbBau',{detail:'Geschoben → Gezogen'})],
-   ["📋 Wagenliste",()=>addEvent('Wagenliste erstellt','AZF./RbBau')],
-   ["🛑 Bremsprobe",()=>addEvent('Bremsprobe durchgeführt','AZF./RbBau')],
-   ["✅ Zug fertig",()=>addEvent('Zug fertig','AZF./RbBau',{detail:'Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.'})],
-   ["⚠️ Störung",()=>addEvent('Störung','AZF./RbBau')]
-  ]
+ const role=document.getElementById('role').value, sel=document.getElementById('eventType');
+ sel.innerHTML='';
+ TYPES[role].forEach(t=>{let o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o)});
+ updatePlaceholder();
+}
+function updatePlaceholder(){
+ const t=document.getElementById('eventType').value;
+ const p={
+  'UV-Sperrung angefordert':'z. B. Gleis 1',
+  'UV-Sperrung erhalten':'z. B. Gleis 1',
+  'UV-Sperrung nicht erhalten':'z. B. Gleis 3',
+  'UV-Sperrung aufgehoben':'z. B. Gleis 1',
+  'Halten / Warten':'z. B. Warten auf Zustimmung · Gleis 3',
+  'Rangieren':'z. B. Gleis 30 → Gleis 42 · gezogen',
+  '🔄 Richtungswechsel':'z. B. Geschoben → Gezogen',
+  '🔄 Zug neu zusammenstellen':'z. B. Beginn der Zugbildung',
+  'Zug fertig':'z. B. Abschluss der Zugbildung',
+  'Vorfall / Ereignis':'z. B. Art · Beschreibung · Maßnahme'
  };
-
- box.innerHTML='';
- (sets[name]||sets.rangier).forEach(([label,fn])=>{
-   const b=document.createElement('button');
-   b.textContent=label;
-   b.onclick=fn;
-   box.appendChild(b);
+ document.getElementById('eventDetail').placeholder=p[t]||'Zusatzinformation';
+}
+function addManualEvent(){
+ const time=document.getElementById('eventTime').value;
+ const type=document.getElementById('eventType').value;
+ if(!time||!type){alert('Bitte Uhrzeit und Tätigkeit auswählen.');return}
+ events.push({
+  kind:'event',simulation:true,
+  date:document.getElementById('simDate').value||todayISO(),
+  time,role:document.getElementById('role').value,type,
+  detail:document.getElementById('eventDetail').value.trim(),
+  location:document.getElementById('location').value.trim()
  });
+ save();render();
 }
-
-function stepTime(t,mins){let [h,m]=t.split(':').map(Number);m+=mins;h=(h+Math.floor(m/60))%24;m%=60;return pad(h)+':'+pad(m)}
-function finishText(){return 'Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.'}
-function scenarioSteps(name){
- const role=name==='sipo'?'Sipo':name==='sakra'?'SAKRA':name==='buep'?'BüP':'AZF./RbBau';
- let s=document.getElementById('simStart').value||'07:00'; const E=[];
- const push=(type,mins,extra={})=>{s=stepTime(s,mins);E.push({type,time:s,role,...extra})};
- E.push({type:'Schichtbeginn',time:s,role});
- if(name==='rangier'){push('Rangieren',10,{von:'Gleis 30',nach:'Gleis 42',fahrart:'geschoben'});push('Halten / Warten',8,{detail:'Warten auf Zustimmung',haltKm:'25.6'});push('Rangieren',10,{von:'km 25.6',nach:'Gleis 42',fahrart:'geschoben'});push('Ankuppeln',5);push('Abkuppeln',5);push('Wagen / Lok abgestellt',8,{detail:'Gleis 42'});push('Wagen gesichert',5,{detail:'Hemmschuhe'})}
- if(name==='zugbildung'){push('Zug neu zusammenstellen',5);push('Ankuppeln',8);push('Rangieren',10,{von:'Gleis 10',nach:'Gleis 14',fahrart:'gezogen'});push('Abkuppeln',5);push('Rangieren',10,{von:'Gleis 14',nach:'Gleis 16',fahrart:'geschoben'});push('Ankuppeln',5);push('Wagenliste erstellt',20);push('Bremsprobe durchgeführt',25);push('Zug fertig',2,{detail:finishText()})}
- if(name==='richtungswechsel'){push('Rangieren',10,{von:'Gleis 30',nach:'Weiche 20',fahrart:'geschoben'});push('Richtungswechsel',5,{detail:'Geschoben → Gezogen',fahrartAlt:'geschoben',fahrartNeu:'gezogen'});push('Rangieren',8,{von:'Weiche 20',nach:'Abstellgleis 42',fahrart:'gezogen'});push('Rangiervorgang beendet',2,{detail:'Weiche 20 → Abstellgleis 42 · gezogen'})}
- if(name==='warten'){push('Rangieren',10,{von:'Gleis 30',nach:'Gleis 42',fahrart:'geschoben'});push('Halten / Warten',15,{detail:'Warten auf Zustimmung',haltKm:'12.4'});push('Rangieren',8,{von:'km 12.4',nach:'Gleis 42',fahrart:'geschoben'});push('Rangiervorgang beendet',2,{detail:'km 12.4 → Gleis 42 · geschoben'})}
- if(name==='vorfall'){push('Rangieren',10,{von:'Gleis 30',nach:'Abstellgleis 42',fahrart:'gezogen'});push('Vorfall / Ereignis',5,{detail:'Testvorfall'})}
- if(name==='sipo'){push('Sipo Schichtbeginn',2);push('Sipo Schichtende',120)}
- if(name==='sakra'){
-   push('Sperrgespräch geführt',10);
-   push('Sperrung erhalten',20,{detail:'UV-Sperrung Gleis 1'});
-   push('Nicht erhalten',60,{detail:'UV-Sperrung Gleis 3'});
-   push('Sperrung erhalten',25,{detail:'UV-Sperrung Gleis 3'});
-   push('Nicht erhalten',70,{detail:'UV-Sperrung Gleis 7'});
-   push('Sperrung erhalten',35,{detail:'UV-Sperrung Gleis 7'});
-   push('Sperrung aufgehoben',10,{detail:'UV-Sperrungen aufgehoben'});
+function addShiftStart(){
+ document.getElementById('eventTime').value=document.getElementById('simStart').value;
+ document.getElementById('eventType').value='Schichtbeginn';
+ document.getElementById('eventDetail').value='';
+ addManualEvent();
+}
+function addShiftEnd(){
+ document.getElementById('eventTime').value=document.getElementById('simEnd').value;
+ document.getElementById('eventType').value='Schichtende';
+ document.getElementById('eventDetail').value='';
+ addManualEvent();
+}
+function removeEvent(index){events.splice(index,1);save();render()}
+function clearSim(){
+ if(!confirm('Alle Simulationsdaten löschen? Echte Schichtdaten werden nicht verändert.'))return;
+ events=[];save();render();
+ document.getElementById('output').innerHTML='<div class="empty">Noch keine Simulation abgespielt.</div>';
+ document.getElementById('simStatus').textContent='Bereit';
+ document.getElementById('simInfo').textContent='Schicht festlegen und Ereignisse eintragen.';
+}
+function sortTimeline(){
+ events.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ save();render();
+}
+function render(){
+ const box=document.getElementById('timeline');
+ if(!events.length){box.innerHTML='<div class="empty">Noch keine Ereignisse eingetragen.</div>';return}
+ const a=events.slice().sort((x,y)=>(x.date+x.time).localeCompare(y.date+y.time));
+ box.innerHTML=a.map((e)=>{
+  const idx=events.indexOf(e);
+  return `<div class="event">
+   <div class="time">${esc(e.time)}</div>
+   <div><b>${esc(e.type)}</b><small>${esc(e.role)}${e.detail?' · '+esc(e.detail):''}${e.location?' · '+esc(e.location):''}</small></div>
+   <button class="del" onclick="removeEvent(${idx})">✕</button>
+  </div>`;
+ }).join('');
+}
+function playSimulation(){
+ if(!events.length){alert('Bitte zuerst Ereignisse eintragen.');return}
+ sortTimeline();
+ const a=events.slice().sort((x,y)=>(x.date+x.time).localeCompare(y.date+y.time));
+ const status=document.getElementById('simStatus'), info=document.getElementById('simInfo'), out=document.getElementById('output');
+ status.textContent='▶️ Simulation läuft…';
+ info.textContent='Virtuelle Zeit springt von Ereignis zu Ereignis – keine echte Wartezeit.';
+ let i=0;
+ function next(){
+  if(i>=a.length){
+   status.textContent='✅ Simulation abgeschlossen';
+   info.textContent=a.length+' Ereignisse simuliert.';
+   return;
+  }
+  const e=a[i++];
+  out.innerHTML=a.slice(0,i).map(x=>`<div class="event"><div class="time">${esc(x.time)}</div><div><b>${esc(x.type)}</b><small>${esc(x.role)}${x.detail?' · '+esc(x.detail):''}</small></div><span>✓</span></div>`).join('');
+  setTimeout(next,180);
  }
- if(name==='buep'){push('Zugmeldung erhalten',10);push('Sicherung',1);push('Zug vorbei',5);push('Aufgehoben',2)}
- if(name==='komplett'){push('Rangieren',10,{von:'Gleis 30',nach:'Gleis 42',fahrart:'geschoben'});push('Halten / Warten',8,{detail:'Warten auf Zustimmung',haltKm:'25.6'});push('Rangieren',10,{von:'km 25.6',nach:'Gleis 42',fahrart:'geschoben'});push('Richtungswechsel',5,{detail:'Geschoben → Gezogen'});push('Rangieren',8,{von:'Gleis 42',nach:'Abstellgleis 7',fahrart:'gezogen'});push('Zug neu zusammenstellen',5);push('Ankuppeln',5);push('Abkuppeln',5);push('Wagenliste erstellt',15);push('Bremsprobe durchgeführt',20);push('Zug fertig',2,{detail:finishText()});push('Wagen gesichert',5,{detail:'Hemmschuhe'})}
- if(name!=='vorfall'&&name!=='sipo'&&name!=='sakra'&&name!=='buep')push('Schichtende',10);
- return E;
+ out.innerHTML='';
+ next();
 }
-function runScenario(){let name=document.getElementById('scenario').value,date=document.getElementById('simDate').value||todayISO();let old=load(),steps=scenarioSteps(name);steps.forEach(x=>old.push({...x,date,simulation:true}));save(old);document.getElementById('simStatus').textContent='Simulation abgeschlossen';document.getElementById('simInfo').textContent=steps.length+' Ereignisse wurden als Testdaten erzeugt.';render()}
-function clearSim(){if(!confirm('Alle Simulationsdaten löschen? Echte Schichtdaten werden nicht verändert.'))return;save([]);render()}
-function render(){let a=load().slice().sort((x,y)=>(x.date+x.time).localeCompare(y.date+y.time));document.getElementById('events').innerHTML=a.length?a.map(x=>'<div class="event sim"><b>'+fmtDate(x.date)+' '+x.time+'</b> – '+esc(x.type)+(x.role?' – '+esc(x.role):'')+(x.fahrart?' – '+esc(x.fahrart):'')+(x.detail?' – '+esc(x.detail):'')+(x.von?' – '+esc(x.von)+' → '+esc(x.nach):'')+(x.haltKm?' – Halt km '+esc(x.haltKm):'')+'</div>').join(''):'Noch keine Simulationsdaten.';let counts={};a.forEach(x=>counts[x.type]=(counts[x.type]||0)+1);document.getElementById('summary').innerHTML=a.length?'<b>'+a.length+'</b> Ereignisse<br>'+Object.entries(counts).map(([k,v])=>'<span class="pill">'+esc(k)+': '+v+'</span>').join(''):'Noch keine Daten.'}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function exportJSON(){let a=load();if(!a.length)return alert('Keine Simulationsdaten vorhanden.');let blob=new Blob([JSON.stringify(a,null,2)],{type:'application/json'});let u=URL.createObjectURL(blob),aEl=document.createElement('a');aEl.href=u;aEl.download='meine-schicht-simulation.json';aEl.click();URL.revokeObjectURL(u)}
+function exportJSON(){
+ if(!events.length){alert('Keine Simulationsdaten vorhanden.');return}
+ const blob=new Blob([JSON.stringify({version:3,exportedAt:new Date().toISOString(),shift:{
+  date:document.getElementById('simDate').value,start:document.getElementById('simStart').value,
+  end:document.getElementById('simEnd').value,role:document.getElementById('role').value,
+  location:document.getElementById('location').value
+ },events},null,2)],{type:'application/json'});
+ const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='meine-schicht-simulation.json';a.click();URL.revokeObjectURL(u);
+}
+function importJSON(){document.getElementById('file').click()}
+function readJSON(ev){
+ const f=ev.target.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{try{let x=JSON.parse(r.result);events=Array.isArray(x)?x:(x.events||[]);save();render();alert('Simulationsdaten importiert.')}catch(e){alert('Die Datei konnte nicht gelesen werden.')}};
+ r.readAsText(f);
+}
 updateEventButtons();render();
 </script></body></html>
