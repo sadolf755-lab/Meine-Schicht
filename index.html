@@ -1104,8 +1104,11 @@ function renderPlans(){
  e.innerHTML+=detail;
 }
 function selectPlanDay(date){selectedPlanDate=date;renderPlans();}
+// Tagesabschluss: konkreten Zielort übernehmen. Bei „Einsatzort“ wird
+// der für den heutigen Einsatz hinterlegte Ort gespeichert, nicht nur die
+// allgemeine Bezeichnung „Zweite Wohnung / Unterkunft“.
 function homeArrival(){
- let ziel=chooseOrt('Wo endest du?');
+ let ziel=chooseOrt('Wo endest du?',true);
  if(!ziel)return;
  let km=prompt('KM-Endstand bei Tagesabschluss:','');
  if(km===null||!km.trim())return;
