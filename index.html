@@ -667,6 +667,12 @@ input::placeholder{color:#6f8798}
 }
 </style>
 
+<style>
+.private-km-wide-btn{
+  margin-top:8px!important;
+}
+</style>
+
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -729,6 +735,7 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
+    <button class="small cockpit-home-btn private-km-wide-btn" onclick="privateCompanyKm()">🚗 <span>PRIVATE KILOMETER</span><b>›</b></button>
   </div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
 <nav class="bottom-nav" aria-label="Hauptnavigation">
@@ -1111,6 +1118,14 @@ function homeArrival(){
  add('Ankunft / Tagesabschluss',{zielart:ziel,kmEnd:km.trim().replace(',','.')});
 }
 function kmNumber(v){let n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null;}
+function privateCompanyKm(){
+ let v=prompt('Private Fahrt mit Firmen-KFZ\n\nGefahrene Privatkilometer laut Fahrtenbuch:','');
+ if(v===null)return;
+ v=v.trim().replace(',','.');
+ if(!v)return;
+ if(!/^\\d+(?:\\.\\d+)?$/.test(v))return alert('Bitte eine gültige Kilometerzahl eingeben.');
+ add('Private Fahrt mit Firmen-KFZ',{privateKm:v});
+}
 function dailyKmTotal(events){
  let total=0,lastStart=null;
  events.forEach(x=>{
@@ -1136,7 +1151,7 @@ function exportPDF(){
   if(x.kmEnd) detailParts.push('KM Ende: '+x.kmEnd);
   if(x.haltKm) detailParts.push('KM Halt: '+x.haltKm);
   if(x.fahrart) detailParts.push(x.fahrart);
-  if(x.detail) detailParts.push(x.detail);
+  if(x.detail) detailParts.push(x.detail); if(x.type==='Private Fahrt mit Firmen-KFZ' && x.privateKm) detailParts.push('Private KM: '+x.privateKm);
   return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`;
 }).join('');
  let firstDate=a[0]?.date||'';let p=planByDate[firstDate]||{};
