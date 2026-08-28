@@ -667,11 +667,6 @@ input::placeholder{color:#6f8798}
 }
 </style>
 
-<style>
-.private-km-wide-btn{
-  margin-top:8px!important;
-}
-</style>
 
 </head><body>
 <style>
@@ -735,7 +730,7 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
-    <button class="small cockpit-home-btn private-km-wide-btn" onclick="privateCompanyKm()">🚗 <span>PRIVATE KILOMETER</span><b>›</b></button>
+<button class="small cockpit-home-btn private-km-btn" onclick="privateCompanyKm()">🚗 <span>PRIVATE KILOMETER</span><b>›</b></button>
   </div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
 <nav class="bottom-nav" aria-label="Hauptnavigation">
@@ -1123,7 +1118,7 @@ function privateCompanyKm(){
  if(v===null)return;
  v=v.trim().replace(',','.');
  if(!v)return;
- if(!/^\\d+(?:\\.\\d+)?$/.test(v))return alert('Bitte eine gültige Kilometerzahl eingeben.');
+ if(!/^\d+(?:\.\d+)?$/.test(v))return alert('Bitte eine gültige Kilometerzahl eingeben.');
  add('Private Fahrt mit Firmen-KFZ',{privateKm:v});
 }
 function dailyKmTotal(events){
