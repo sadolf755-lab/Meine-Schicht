@@ -773,7 +773,20 @@ input::placeholder{color:#6f8798}
 <label>Personalnummer</label><input id="setPersonal" placeholder="Personalnummer">
 <button class="small" onclick="saveSettings()">💾 Daten speichern</button>
 </div></section>
-<section id="monatsbericht" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2>📊 Monatsbericht</h2><div class="muted">Original-Excel-Vorlage verwenden und zunächst einen einzelnen Testtag übertragen.</div><label>Monat</label><input id="mrMonth" type="month"><label>Tag</label><input id="mrDay" type="number" min="1" max="31" value="1"><button class="small" onclick="createOriginalExcelTest()">📊 Original-Excel testen</button><div id="mrStatus" class="muted" style="margin-top:10px"></div></div></section>
+
+<section id="monatsbericht" class="hidden">
+<button class="small" onclick="show('home')">← Zurück</button>
+<div class="card">
+  <h2>📊 Monatsbericht</h2>
+  <div class="muted">Original-Excel-Vorlage verwenden. Zunächst wird ein einzelner Testtag übertragen.</div>
+  <label>Monat</label>
+  <select id="reportMonth"></select>
+  <label>Testtag</label>
+  <select id="reportDay"></select>
+  <button class="small" onclick="generateOriginalExcelTest()">📊 Test-Excel erzeugen</button>
+  <div id="reportStatus" class="muted" style="margin-top:10px"></div>
+</div>
+</section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
 const KEY='meine_schicht_v3';const RANGIER_KEY='meine_schicht_aktiver_rangier_v1';let role='';let planWeekOffset=0;
@@ -1145,7 +1158,7 @@ function exportPDF(){
  w.document.write(`<html><head><meta charset="utf-8"><title>Meine Schicht</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
 <div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
 <div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
-<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button>\n<script>\nconst MONATSBERICHT_VORLAGE='./Monatsbericht_Vorlage.xlsx';\nfunction openMonatsbericht(){show('monatsbericht')}\nfunction initMonatsbericht(){const m=document.getElementById('mrMonth');if(m&&!m.value){const d=new Date();m.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}}\nfunction createOriginalExcelTest(){\n const status=document.getElementById('mrStatus');\n if(typeof XLSX==='undefined'){status.textContent='Excel-Bibliothek nicht geladen.';return}\n const month=document.getElementById('mrMonth').value;const day=Number(document.getElementById('mrDay').value);\n if(!month||day<1||day>31){status.textContent='Bitte Monat und Tag wählen.';return}\n const [year,mon]=month.split('-').map(Number);const date=`${pad(day)}.${pad(mon)}.${year}`;\n fetch(MONATSBERICHT_VORLAGE,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Monatsbericht_Vorlage.xlsx nicht gefunden.');return r.arrayBuffer()}).then(buf=>{\n  const wb=XLSX.read(buf,{type:'array',cellFormula:true});const ws=wb.Sheets[wb.SheetNames[0]];\n  const events=get().filter(x=>x.kind==='event'&&x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));\n  const plan=get().filter(x=>x.kind==='plan'&&x.date===date)[0]||{};const s=getSettings();\n  const dep=events.find(x=>x.type==='Abfahrt');const end=[...events].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');\n  const row=day<=15?8+day:13+day;\n  const set=(c,v)=>{if(v!==''&&v!=null)ws[c]={t:'s',v:String(v)}};\n  set(`A${row}`,day);set(`B${row}`,dep?.start||'');set(`C${row}`,plan.ort||end?.ort||'');\n  set(`D${row}`,dep&&end?`${dep.time.slice(0,5)}-${end.time.slice(0,5)}`:'');set(`F${row}`,s.kfz||'');\n  set(`K${row}`,plan.role||events.find(x=>x.role)?.role||'');set(`L${row}`,plan.auftraggeber||'');\n  set(`M${row}`,plan.time?.split('-')[0]||'');set(`N${row}`,plan.time?.split('-')[1]||'');\n  set('C5',s.name||'');set('I5',s.kfz||'');set('L5',document.getElementById('mrMonth').value);\n  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=`Monatsbericht_Test_${year}-${pad(mon)}-${pad(day)}.xlsx`;a.click();\n  status.textContent=`Test erfolgreich: ${date} wurde in die Originalvorlage übertragen (Zeile ${row}).`;\n }).catch(e=>{status.textContent='Fehler: '+e.message})\n}\n</script>\n</body></html>`);w.document.close()}
+<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);w.document.close()}
 function clearData(){
  if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
  const plans=get().filter(x=>x.kind==='plan');
@@ -1179,6 +1192,165 @@ function updateCockpitStatus(){
   let lastRole=start?.role || arr?.role || '';
   document.getElementById('statusRole').textContent=lastRole||'–';
   document.getElementById('statusOrt').textContent='Einsatzort: '+(arr?.ort || '–');
+}
+
+
+// =========================================================
+// MONATSBERICHT – ORIGINAL-EXCEL-INTEGRATION / STUFE 1
+// Basis: gesicherte index8.html
+// =========================================================
+const MONATSBERICHT_TEMPLATE = './Monatsbericht_Vorlage.xlsx';
+
+function openMonatsbericht(){ show('monatsbericht'); }
+
+function initMonatsbericht(){
+  const month=document.getElementById('reportMonth');
+  const day=document.getElementById('reportDay');
+  if(!month||!day)return;
+
+  const now=new Date();
+  month.innerHTML='';
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),i,1);
+    const o=document.createElement('option');
+    o.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+    o.textContent=d.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+    month.appendChild(o);
+  }
+  month.value=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+
+  day.innerHTML='';
+  for(let i=1;i<=31;i++){
+    const o=document.createElement('option');
+    o.value=String(i); o.textContent=`${i}.`;
+    day.appendChild(o);
+  }
+  day.value=String(now.getDate());
+}
+
+function reportDateFromSelection(){
+  const m=document.getElementById('reportMonth')?.value;
+  const day=Number(document.getElementById('reportDay')?.value||1);
+  if(!m)return null;
+  const [y,mo]=m.split('-').map(Number);
+  const max=new Date(y,mo,0).getDate();
+  return `${pad(Math.min(day,max))}.${pad(mo)}.${y}`;
+}
+
+function getReportPlan(date){
+  return get().find(x=>x.kind==='plan'&&x.date===date)||null;
+}
+
+function getReportEvents(date){
+  return get().filter(x=>x.kind==='event'&&x.date===date)
+    .sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+}
+
+function reportTimeMinutes(a,b){
+  if(!a||!b)return null;
+  const pa=String(a).slice(0,5).split(':').map(Number);
+  const pb=String(b).slice(0,5).split(':').map(Number);
+  if(pa.length!==2||pb.length!==2||pa.some(Number.isNaN)||pb.some(Number.isNaN))return null;
+  let s=pa[0]*60+pa[1],e=pb[0]*60+pb[1];
+  if(e<s)e+=1440;
+  return e-s;
+}
+
+function reportKm(v){
+  const n=Number(String(v??'').replace(',','.'));
+  return Number.isFinite(n)?n:null;
+}
+
+function deriveReportTestData(date){
+  const plan=getReportPlan(date);
+  const ev=getReportEvents(date);
+  const dep=ev.find(x=>x.type==='Abfahrt');
+  const end=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
+  const settings=getSettings();
+
+  const planned=(plan?.time||'').split('-');
+  const workFrom=planned[0]||'';
+  const workTo=planned[1]||'';
+  const paidMinutes=reportTimeMinutes(workFrom,workTo);
+  let pause='';
+  if(paidMinutes!=null){
+    const h=paidMinutes/60;
+    if(h>=11)pause='1,00';
+    else if(h>=10)pause='0,75';
+    else if(h>=8.5)pause='0,50';
+  }
+
+  const pauseMinutes=pause?Math.round(Number(pause.replace(',','.'))*60):0;
+  const actualWork=paidMinutes!=null?((paidMinutes-pauseMinutes)/60).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+
+  const km1=reportKm(dep?.kmStart),km2=reportKm(end?.kmEnd);
+  const totalKm=(km1!=null&&km2!=null&&km2>=km1)?km2-km1:'';
+
+  return {
+    day:Number(date.slice(0,2)),
+    home:dep?.ort||'',
+    site:plan?.ort||'',
+    outside:dep?.time&&end?.time?`${dep.time.slice(0,5)}-${end.time.slice(0,5)}`:'',
+    outsideTotal:reportTimeMinutes(dep?.time,end?.time),
+    plate:settings.kfz||'',
+    companyKm:totalKm,
+    privateKm:'',
+    privateCompanyKm:'',
+    overnight:ev.some(x=>/Übernachtung/i.test(x.type||''))?1:'',
+    role:plan?.role||'',
+    customer:plan?.auftraggeber||'',
+    workFrom,workTo,pause,actualWork,
+    standby:''
+  };
+}
+
+async function generateOriginalExcelTest(){
+  const status=document.getElementById('reportStatus');
+  const date=reportDateFromSelection();
+  if(!date){if(status)status.textContent='Kein gültiger Testtag.';return;}
+
+  try{
+    if(typeof XLSX==='undefined')throw new Error('Excel-Bibliothek wurde nicht geladen.');
+    if(status)status.textContent='Originalvorlage wird geladen …';
+
+    const res=await fetch(MONATSBERICHT_TEMPLATE,{cache:'no-store'});
+    if(!res.ok)throw new Error(`Vorlage nicht gefunden (${res.status}).`);
+    const buf=await res.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellFormula:true});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const d=deriveReportTestData(date);
+    const day=d.day;
+    const row=day<=15?8+day:13+day;
+
+    const put=(cell,value)=>{
+      if(value===undefined||value===null||value==='')return;
+      ws[cell]={t:typeof value==='number'?'n':'s',v:value};
+    };
+
+    put(`A${row}`,d.day); put(`B${row}`,d.home); put(`C${row}`,d.site);
+    put(`D${row}`,d.outside); put(`E${row}`,d.outsideTotal!=null?(d.outsideTotal/60).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}):'');
+    put(`F${row}`,d.plate); put(`G${row}`,d.companyKm); put(`H${row}`,d.privateKm);
+    put(`I${row}`,d.privateCompanyKm); put(`J${row}`,d.overnight); put(`K${row}`,d.role);
+    put(`L${row}`,d.customer); put(`M${row}`,d.workFrom); put(`N${row}`,d.workTo);
+    put(`O${row}`,d.pause); put(`P${row}`,d.actualWork); put(`Q${row}`,d.standby);
+
+    put('I5',d.plate);
+    if(settings?.name)put('C5',settings.name);
+
+    const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`Monatsbericht_Test_${date.replaceAll('.','-')}.xlsx`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+    if(status)status.textContent=`Test erfolgreich: ${date} wurde in Zeile ${row} übertragen.`;
+  }catch(err){
+    console.error(err);
+    if(status)status.textContent='Fehler: '+err.message;
+    alert('Monatsbericht-Test fehlgeschlagen: '+err.message);
+  }
 }
 
 function render(){
