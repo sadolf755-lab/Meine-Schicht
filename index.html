@@ -730,6 +730,7 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
+    <button class="small cockpit-home-btn" onclick="recordPrivateDrive()">🚗 <span>PRIVATE FAHRT MIT FIRMEN-KFZ</span><b>›</b></button>
   </div>
 <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small" onclick="openMonatsbericht()">📊 Monatsbericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
 <nav class="bottom-nav" aria-label="Hauptnavigation">
@@ -1117,6 +1118,14 @@ function renderPlans(){
  e.innerHTML+=detail;
 }
 function selectPlanDay(date){selectedPlanDate=date;renderPlans();}
+function recordPrivateDrive(){
+  let km=prompt('Private Fahrt mit Firmen-KFZ\n\nKilometer aus dem Fahrtenbuch:','');
+  if(km===null||!km.trim())return;
+  km=km.trim().replace(',','.');
+  if(!/^\\d+(?:\\.\\d+)?$/.test(km))return alert('Bitte eine gültige Kilometerzahl eingeben.');
+  add('Private Fahrt mit Firmen-KFZ',{privateKm:km});
+  alert('Private Kilometer erfasst: '+km.replace('.',',')+' km');
+}
 function homeArrival(){
  let ziel=chooseOrt('Wo endest du?');
  if(!ziel)return;
@@ -1285,6 +1294,10 @@ function deriveReportTestData(date){
 
   const km1=reportKm(dep?.kmStart),km2=reportKm(end?.kmEnd);
   const totalKm=(km1!=null&&km2!=null&&km2>=km1)?km2-km1:'';
+  const privateKm=ev.reduce((sum,x)=>{
+    const k=reportKm(x.privateKm);
+    return sum+(x.type==='Private Fahrt mit Firmen-KFZ' && k!=null ? k : 0);
+  },0);
 
   return {
     day:Number(date.slice(0,2)),
@@ -1294,8 +1307,8 @@ function deriveReportTestData(date){
     outsideTotal:reportTimeMinutes(dep?.time,end?.time),
     plate:settings.kfz||'',
     companyKm:totalKm,
-    privateKm:'',
-    privateCompanyKm:'',
+    privateKm:privateKm||'',
+    privateCompanyKm:privateKm||'',
     overnight:ev.some(x=>/Übernachtung/i.test(x.type||''))?1:'',
     role:plan?.role||'',
     customer:plan?.auftraggeber||'',
@@ -1357,7 +1370,7 @@ function render(){
   document.getElementById('kw').textContent=kw();
   updateCockpitStatus();
   document.getElementById('today').innerHTML=getShiftEvents().length
-    ? getShiftEvents().slice().reverse().map(x=>`${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>')
+    ? getShiftEvents().slice().reverse().map(x=>`${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}${x.privateKm?' – '+esc(x.privateKm)+' km':''}`).join('<br>')
     : 'Noch keine Erfassung.';
   renderEvents();
 }
