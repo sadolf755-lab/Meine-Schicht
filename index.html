@@ -667,8 +667,6 @@ input::placeholder{color:#6f8798}
 }
 </style>
 
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -731,9 +729,8 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
-    <button class="small cockpit-home-btn" onclick="recordPrivateDrive()">🚗 <span>PRIVATE FAHRT MIT FIRMEN-KFZ</span><b>›</b></button>
   </div>
-<div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small" onclick="openMonatsbericht()">📊 Monatsbericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
+<div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
 <nav class="bottom-nav" aria-label="Hauptnavigation">
   <button class="active" onclick="show('home')"><span>⌂</span>Start</button>
   <button onclick="document.getElementById('today').scrollIntoView({behavior:'smooth'})"><span>▣</span>Heute</button>
@@ -773,29 +770,8 @@ input::placeholder{color:#6f8798}
 <label>Arbeitgeber</label><input id="setEmployer" placeholder="Arbeitgeber">
 <label>Mein Name</label><input id="setName" placeholder="Vorname Nachname">
 <label>Personalnummer</label><input id="setPersonal" placeholder="Personalnummer">
-<label>Hauptwohnung</label><input id="setHome1" placeholder="z. B. Blomberg">
-<label>Zweitwohnung / Unterkunft</label><input id="setHome2" placeholder="z. B. Augsburg">
-<label>Firmen-Kfz</label><input id="setKfz" placeholder="z. B. IN – DB 27">
 <button class="small" onclick="saveSettings()">💾 Daten speichern</button>
 </div></section>
-
-<section id="monatsbericht" class="hidden">
-<button class="small" onclick="show('home')">← Zurück</button>
-<div class="card">
-  <h2>📊 Monatsbericht</h2>
-  <div class="muted">Die echte Originalvorlage wird für den gewählten Monat automatisch ausgefüllt.</div>
-  <label>Monat</label><input id="reportMonth" type="month">
-  <div class="grid">
-    <button class="small" onclick="generateFullOriginalExcel()">📊 Excel-Bericht</button>
-    <button class="small" onclick="generateOriginalPDF()">📄 PDF-Bericht</button>
-  </div>
-  <div id="reportStatus" class="muted" style="margin-top:10px"></div>
-</div>
-<div class="card">
-  <h2>ℹ️ Automatische Übernahme</h2>
-  <div class="muted">Abfahrt bis Tagesabschluss · Dienst-km · private km mit Firmen-Kfz · Übernachtung · Einsatzfunktion · Auftraggeber · Arbeitszeit · Pausen · bezahlte Bereitschaft.</div>
-</div>
-</section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
 const KEY='meine_schicht_v3';const RANGIER_KEY='meine_schicht_aktiver_rangier_v1';let role='';let planWeekOffset=0;
@@ -805,12 +781,12 @@ const get=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){r
 function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
-function show(id){['home','plan','role','settings','monatsbericht'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();if(id==='monatsbericht')openMonatsbericht();render()}
+function show(id){['home','plan','role','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
 const SETTINGS_KEY='meine_schicht_stammdaten';
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch(e){return{}}}
 function openSettings(){loadSettings();show('settings')}
-function loadSettings(){let s=getSettings();document.getElementById('setEmployer').value=s.employer||'';document.getElementById('setName').value=s.name||'';document.getElementById('setPersonal').value=s.personal||'';document.getElementById('setHome1').value=s.home1||'';document.getElementById('setHome2').value=s.home2||'';document.getElementById('setKfz').value=s.kfz||''}
-function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employer:document.getElementById('setEmployer').value.trim(),name:document.getElementById('setName').value.trim(),personal:document.getElementById('setPersonal').value.trim(),home1:document.getElementById('setHome1').value.trim(),home2:document.getElementById('setHome2').value.trim(),kfz:document.getElementById('setKfz').value.trim()}));alert('Persönliche Daten gespeichert.')}
+function loadSettings(){let s=getSettings();document.getElementById('setEmployer').value=s.employer||'';document.getElementById('setName').value=s.name||'';document.getElementById('setPersonal').value=s.personal||''}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employer:document.getElementById('setEmployer').value.trim(),name:document.getElementById('setName').value.trim(),personal:document.getElementById('setPersonal').value.trim()}));alert('Persönliche Daten gespeichert.')}
 function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
 function simpleEvent(type){add(type)}
 function chooseOrt(promptText,includeEinsatzort=false){
@@ -831,12 +807,6 @@ function chooseOrt(promptText,includeEinsatzort=false){
  let m=includeEinsatzort ? {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'} : {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'};
  if(v==='5' || (!includeEinsatzort && v==='4')){let o=prompt('Ort:','');if(o===null||!o.trim())return null;return o.trim();}
  return m[v]||null;
-}
-function reportConfiguredOrt(label){
- let s=getSettings();
- if(label==='Hauptwohnung' && s.home1)return s.home1;
- if(label==='Zweite Wohnung / Unterkunft' && s.home2)return s.home2;
- return label||'';
 }
 function departure(){
  let start=chooseOrt('Von wo startest du?');
@@ -1132,14 +1102,6 @@ function renderPlans(){
  e.innerHTML+=detail;
 }
 function selectPlanDay(date){selectedPlanDate=date;renderPlans();}
-function recordPrivateDrive(){
-  let km=prompt('Private Fahrt mit Firmen-KFZ\n\nKilometer aus dem Fahrtenbuch:','');
-  if(km===null||!km.trim())return;
-  km=km.trim().replace(',','.');
-  if(!/^\\d+(?:\\.\\d+)?$/.test(km))return alert('Bitte eine gültige Kilometerzahl eingeben.');
-  add('Private Fahrt mit Firmen-KFZ',{privateKm:km});
-  alert('Private Kilometer erfasst: '+km.replace('.',',')+' km');
-}
 function homeArrival(){
  let ziel=chooseOrt('Wo endest du?');
  if(!ziel)return;
@@ -1217,151 +1179,11 @@ function updateCockpitStatus(){
   document.getElementById('statusOrt').textContent='Einsatzort: '+(arr?.ort || '–');
 }
 
-
-// =========================================================
-// MONATSBERICHT – ORIGINAL-EXCEL-INTEGRATION / STUFE 1
-// Basis: gesicherte index8.html
-// =========================================================
-const MONATSBERICHT_TEMPLATE='./Monatsbericht_Vorlage.xlsx';
-const MONATSBERICHT_PDF_TEMPLATE='./Monatsbericht_Vorlage.pdf';
-
-function openMonatsbericht(){
-  show('monatsbericht');
-  const el=document.getElementById('reportMonth');
-  if(el&&!el.value){const n=new Date();el.value=`${n.getFullYear()}-${pad(n.getMonth()+1)}`;}
-}
-function reportDate(y,m,d){return `${pad(d)}.${pad(m)}.${y}`;}
-function reportNum(v){const n=Number(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null;}
-function reportMinutes(a,b){
-  if(!a||!b)return null;
-  const x=String(a).slice(0,5).split(':').map(Number),y=String(b).slice(0,5).split(':').map(Number);
-  if(x.some(Number.isNaN)||y.some(Number.isNaN))return null;
-  let s=x[0]*60+x[1],e=y[0]*60+y[1];if(e<s)e+=1440;return e-s;
-}
-function reportEvents(date){return get().filter(x=>x.kind==='event'&&x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));}
-function reportPlan(date){return get().find(x=>x.kind==='plan'&&x.date===date)||null;}
-function reportPause(minutes){if(minutes==null)return '';const h=minutes/60;if(h>=11)return 60;if(h>=10)return 45;if(h>=8.5)return 30;return 0;}
-function reportHomeName(label){
-  const s=getSettings();
-  if(label==='Hauptwohnung')return s.home1||label;
-  if(label==='Zweite Wohnung / Unterkunft')return s.home2||label;
-  return label||'';
-}
-function reportPaidStandby(events,roleName){
-  if(/AZF|RbBau/i.test(roleName||'')){
-    let total=0,lastEnd=null;
-    events.forEach(e=>{
-      if(e.type==='Rangiervorgang beendet') lastEnd=e.time;
-      if(e.type==='Rangieren' && lastEnd){const m=reportMinutes(lastEnd,e.time);if(m!=null)total+=m;lastEnd=null;}
-    });
-    return total;
-  }
-  if(roleName==='BüP'){
-    let total=0,last=null;
-    events.filter(e=>e.type==='Zugmeldung erhalten').forEach(e=>{if(last){const m=reportMinutes(last,e.time);if(m!=null)total+=m;}last=e.time;});
-    return total;
-  }
-  return 0;
-}
-function reportRowData(date){
-  const p=reportPlan(date),ev=reportEvents(date),s=getSettings();
-  const dep=ev.find(x=>x.type==='Abfahrt')||null;
-  const finish=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss')||null;
-  const outsideMinutes=reportMinutes(dep?.time,finish?.time);
-  const kmStart=reportNum(dep?.kmStart),kmEnd=reportNum(finish?.kmEnd);
-  const serviceKm=(kmStart!=null&&kmEnd!=null&&kmEnd>=kmStart)?kmEnd-kmStart:'';
-  const privateCompanyKm=ev.reduce((sum,x)=>sum+(x.type==='Private Fahrt mit Firmen-KFZ'&&reportNum(x.privateKm)!=null?reportNum(x.privateKm):0),0);
-  const parts=String(p?.time||'').split('-');
-  const workFrom=parts[0]||'',workTo=parts[1]||'';
-  const paidMinutes=reportMinutes(workFrom,workTo),pauseMinutes=reportPause(paidMinutes);
-  const actualWork=paidMinutes!=null?(paidMinutes-pauseMinutes)/60:'';
-  const standbyMinutes=reportPaidStandby(ev,p?.role||'');
-  return {
-    home:reportHomeName(dep?.start||''),site:p?.ort||finish?.ort||'',outside:dep?.time&&finish?.time?`${dep.time.slice(0,5)}-${finish.time.slice(0,5)}`:'',outsideHours:outsideMinutes!=null?outsideMinutes/60:'',plate:s.kfz||'',serviceKm,
-    privateKm:privateCompanyKm||'',privateCompanyKm:privateCompanyKm||'',overnight:ev.some(x=>/Übernachtung/i.test(x.type||''))?1:'',role:p?.role||'',customer:p?.auftraggeber||'',workFrom,workTo,pause:pauseMinutes?pauseMinutes/60:'',actualWork,paidStandby:standbyMinutes?standbyMinutes/60:''
-  };
-}
-function reportExcelRow(day){return day<=15?8+day:13+day;}
-function reportWrite(ws,cell,v){if(v===undefined||v===null||v==='')return;ws[cell]={t:typeof v==='number'?'n':'s',v:v};}
-function reportSetHeader(ws,s,year,month){
-  if(s.name)reportWrite(ws,'C5',s.name+(s.personal?` / Pers.Nr.:  ${s.personal}`:''));
-  if(s.kfz)reportWrite(ws,'I5',s.kfz);
-  reportWrite(ws,'L5',` ${new Date(year,month-1,1).toLocaleDateString('de-DE',{month:'long'})} / ${year}`);
-}
-async function loadOriginalWorkbook(){
-  if(typeof XLSX==='undefined')throw new Error('Excel-Bibliothek wurde nicht geladen.');
-  const r=await fetch(MONATSBERICHT_TEMPLATE,{cache:'no-store'});if(!r.ok)throw new Error(`Original-Excel nicht gefunden (${r.status}).`);
-  return XLSX.read(await r.arrayBuffer(),{type:'array',cellFormula:true,cellStyles:true,cellNF:true,cellHTML:true});
-}
-async function generateFullOriginalExcel(){
-  const status=document.getElementById('reportStatus'),mv=document.getElementById('reportMonth')?.value;
-  if(!mv)return alert('Bitte zuerst den Monat auswählen.');
-  try{
-    if(status)status.textContent='Originalvorlage wird ausgefüllt …';
-    const [year,month]=mv.split('-').map(Number),wb=await loadOriginalWorkbook(),ws=wb.Sheets[wb.SheetNames[0]],s=getSettings();
-    reportSetHeader(ws,s,year,month);
-    const days=new Date(year,month,0).getDate();
-    for(let d=1;d<=days;d++){
-      const x=reportRowData(reportDate(year,month,d)),r=reportExcelRow(d);
-      reportWrite(ws,`A${r}`,d);reportWrite(ws,`B${r}`,x.home);reportWrite(ws,`C${r}`,x.site);reportWrite(ws,`D${r}`,x.outside);reportWrite(ws,`E${r}`,x.outsideHours);reportWrite(ws,`F${r}`,x.plate);reportWrite(ws,`G${r}`,x.serviceKm);reportWrite(ws,`H${r}`,x.privateKm);reportWrite(ws,`I${r}`,x.privateCompanyKm);reportWrite(ws,`J${r}`,x.overnight);reportWrite(ws,`K${r}`,x.role);reportWrite(ws,`L${r}`,x.customer);reportWrite(ws,`M${r}`,x.workFrom);reportWrite(ws,`N${r}`,x.workTo);reportWrite(ws,`O${r}`,x.pause);reportWrite(ws,`P${r}`,x.actualWork);reportWrite(ws,`Q${r}`,x.paidStandby);
-    }
-    const bytes=XLSX.write(wb,{bookType:'xlsx',type:'array',cellStyles:true});
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=`Monatsbericht_${year}-${pad(month)}.xlsx`;document.body.appendChild(a);a.click();a.remove();
-    if(status)status.textContent=`Monatsbericht ${pad(month)}/${year} als Original-Excel-Kopie erstellt.`;
-  }catch(e){console.error(e);if(status)status.textContent='Fehler: '+e.message;alert(e.message);}
-}
-function pdfFitText(page,font,text,x,y,maxWidth,size=7.5){
-  if(text===undefined||text===null||text==='')return;
-  let s=size;while(s>4 && font.widthOfTextAtSize(String(text),s)>maxWidth)s-=0.25;
-  page.drawText(String(text),{x,y,size:s,font});
-}
-function pdfCell(page,font,text,col,row,pageNo){
-  const xs=[14.08,40.12,124.83,209.55,281.23,313.07,347.82,395.59,443.35,483.88,514.26,550.42,623.53,666.23,707.50,741.54,782.07,820.43];
-  const widths=xs.slice(1).map((v,i)=>v-xs[i]);
-  let top;
-  if(pageNo===0) top=179.27+(row-1)*21.09;
-  else top=143.20+(row-16)*21.09;
-  const col0=col-1;
-  if(col0<0||col0>=widths.length)return;
-  const y=595.30-top-13.2;
-  pdfFitText(page,font,text,xs[col0]+2,y,widths[col0]-4,7.3);
-}
-async function generateOriginalPDF(){
-  const status=document.getElementById('reportStatus'),mv=document.getElementById('reportMonth')?.value;
-  if(!mv)return alert('Bitte zuerst den Monat auswählen.');
-  try{
-    if(!window.PDFLib)throw new Error('PDF-Bibliothek wurde nicht geladen.');
-    if(status)status.textContent='Original-PDF wird vorbereitet …';
-    const [year,month]=mv.split('-').map(Number),r=await fetch(MONATSBERICHT_PDF_TEMPLATE,{cache:'no-store'});
-    if(!r.ok)throw new Error(`PDF-Vorlage nicht gefunden (${r.status}). Bitte Monatsbericht_Vorlage.pdf ins GitHub-Projekt legen.`);
-    const pdf=await PDFLib.PDFDocument.load(await r.arrayBuffer()),font=await pdf.embedFont(PDFLib.StandardFonts.Helvetica),s=getSettings();
-    const pages=pdf.getPages();
-    // Cover header values over the static original header.
-    const p1=pages[0],p2=pages[1];
-    // White out only the original dynamic header values, then redraw.
-    p1.drawRectangle({x:120,y:475,width:175,height:20,color:PDFLib.rgb(1,1,1)});
-    p1.drawRectangle({x:440,y:474,width:55,height:20,color:PDFLib.rgb(1,1,1)});
-    p1.drawRectangle({x:550,y:474,width:90,height:20,color:PDFLib.rgb(1,1,1)});
-    pdfFitText(p1,font,(s.name||'')+(s.personal?` / Pers.Nr.:  ${s.personal}`:''),125,480,165,9);
-    pdfFitText(p1,font,s.kfz||'',444,480,48,9);
-    pdfFitText(p1,font,`${new Date(year,month-1,1).toLocaleDateString('de-DE',{month:'long'})} / ${year}`,553,480,84,9);
-
-    const days=new Date(year,month,0).getDate();
-    for(let d=1;d<=days;d++){
-      const x=reportRowData(reportDate(year,month,d));
-      const pg=d<=15?p1:p2, pn=d<=15?0:1, row=d;
-      [x.home,x.site,x.outside,x.outsideHours,x.plate,x.serviceKm,x.privateCompanyKm,x.overnight,x.role,x.customer,x.workFrom,x.workTo,x.pause,x.actualWork,x.paidStandby].forEach(()=>{});
-      pdfCell(pg,font,d,1,row,pn);pdfCell(pg,font,x.home,2,row,pn);pdfCell(pg,font,x.site,3,row,pn);pdfCell(pg,font,x.outside,4,row,pn);pdfCell(pg,font,x.outsideHours===''?'':x.outsideHours.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}),5,row,pn);pdfCell(pg,font,x.plate,6,row,pn);pdfCell(pg,font,x.serviceKm,7,row,pn);pdfCell(pg,font,'',8,row,pn);pdfCell(pg,font,x.privateCompanyKm,9,row,pn);pdfCell(pg,font,x.overnight,10,row,pn);pdfCell(pg,font,x.role,11,row,pn);pdfCell(pg,font,x.customer,12,row,pn);pdfCell(pg,font,x.workFrom,13,row,pn);pdfCell(pg,font,x.workTo,14,row,pn);pdfCell(pg,font,x.pause===''?'':x.pause.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}),15,row,pn);pdfCell(pg,font,x.actualWork===''?'':x.actualWork.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}),16,row,pn);pdfCell(pg,font,x.paidStandby===''?'':x.paidStandby.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}),17,row,pn);
-    }
-    const bytes=await pdf.save(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));a.download=`Monatsbericht_${year}-${pad(month)}.pdf`;document.body.appendChild(a);a.click();a.remove();
-    if(status)status.textContent=`PDF ${pad(month)}/${year} aus der Originalvorlage erstellt.`;
-  }catch(e){console.error(e);if(status)status.textContent='Fehler: '+e.message;alert(e.message);}
-}
 function render(){
   document.getElementById('kw').textContent=kw();
   updateCockpitStatus();
   document.getElementById('today').innerHTML=getShiftEvents().length
-    ? getShiftEvents().slice().reverse().map(x=>`${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}${x.privateKm?' – '+esc(x.privateKm)+' km':''}`).join('<br>')
+    ? getShiftEvents().slice().reverse().map(x=>`${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>')
     : 'Noch keine Erfassung.';
   renderEvents();
 }
