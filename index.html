@@ -667,21 +667,7 @@ input::placeholder{color:#6f8798}
 }
 </style>
 
-
-<style id="monthly-report-style">
-.report-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.report-stat{background:#071826;border:1px solid #1a435d;border-radius:13px;padding:10px;text-align:center}
-.report-stat b{display:block;font-size:19px;color:#fff}.report-stat span{font-size:11px;color:#91a6b8}
-.report-table-wrap{overflow-x:auto;border:1px solid #1a435d;border-radius:12px}
-.report-table{width:100%;border-collapse:collapse;min-width:860px;font-size:11px}
-.report-table th,.report-table td{border-bottom:1px solid #183b52;padding:7px 6px;text-align:left;vertical-align:top}
-.report-table th{background:#0b2030;color:#dceaf2;position:sticky;top:0}
-.report-table td{color:#e8f1f6}
-.report-empty{padding:18px;text-align:center;color:#91a6b8}
-.report-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:600px){.report-summary{grid-template-columns:repeat(2,1fr)}}
-</style>
-
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -744,14 +730,13 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
-    <button class="small cockpit-home-btn" onclick="privateTrip()">🚗 <span>PRIVATE FAHRT MIT FIRMEN-KFZ</span><b>›</b></button>
   </div>
-<div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="show('report')">📊 Monatsbericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
+<div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div><div class="card settings cockpit-settings"><button class="small" onclick="openSettings()">⚙️ Meine Daten</button> <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button><button class="small" onclick="openMonatsbericht()">📊 Monatsbericht</button><button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button></div>
 <nav class="bottom-nav" aria-label="Hauptnavigation">
   <button class="active" onclick="show('home')"><span>⌂</span>Start</button>
   <button onclick="document.getElementById('today').scrollIntoView({behavior:'smooth'})"><span>▣</span>Heute</button>
   <button onclick="show('plan')"><span>🚂</span>Einsätze</button>
-  <button onclick="show('report')"><span>▤</span>Berichte</button>
+  <button onclick="exportPDF()"><span>▤</span>Berichte</button>
   <button onclick="openSettings()"><span>⚙</span>Einstellungen</button>
 </nav></section>
 <section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
@@ -786,29 +771,9 @@ input::placeholder{color:#6f8798}
 <label>Arbeitgeber</label><input id="setEmployer" placeholder="Arbeitgeber">
 <label>Mein Name</label><input id="setName" placeholder="Vorname Nachname">
 <label>Personalnummer</label><input id="setPersonal" placeholder="Personalnummer">
-<label>🏠 Hauptwohnung</label><input id="setHome1" placeholder="Ort der Hauptwohnung">
-<label>🏠 Zweitwohnung</label><input id="setHome2" placeholder="Ort der Zweitwohnung / Unterkunft">
 <button class="small" onclick="saveSettings()">💾 Daten speichern</button>
 </div></section>
-<section id="report" class="hidden">
-<button class="small" onclick="show('home')">← Zurück</button>
-<div class="card">
-  <h2>📊 Monatsbericht</h2>
-  <div class="muted">Die Schichtdaten werden aus der laufenden Dokumentation zusammengestellt.</div>
-  <div class="row">
-    <div><label>Monat</label><input id="reportMonth" type="month" onchange="renderMonthlyReport()"></div>
-    <div style="display:flex;align-items:end"><button class="small" style="width:100%" onclick="renderMonthlyReport()">🔄 Aktualisieren</button></div>
-  </div>
-  <div id="reportSummary"></div>
-  <div class="report-actions">
-    <button class="small" onclick="exportMonthlyPDF()">📄 Monatsbericht als PDF</button>
-    <button class="small" onclick="exportMonthlyCSV()">📊 Monatsdaten als CSV</button>
-  </div>
-</div>
-<div class="card">
-  <div id="monthlyReportTable" class="report-table-wrap"></div>
-</div>
-</section>
+<section id="monatsbericht" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2>📊 Monatsbericht</h2><div class="muted">Original-Excel-Vorlage verwenden und zunächst einen einzelnen Testtag übertragen.</div><label>Monat</label><input id="mrMonth" type="month"><label>Tag</label><input id="mrDay" type="number" min="1" max="31" value="1"><button class="small" onclick="createOriginalExcelTest()">📊 Original-Excel testen</button><div id="mrStatus" class="muted" style="margin-top:10px"></div></div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
 const KEY='meine_schicht_v3';const RANGIER_KEY='meine_schicht_aktiver_rangier_v1';let role='';let planWeekOffset=0;
@@ -818,19 +783,16 @@ const get=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){r
 function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
-function show(id){['home','plan','role','settings','report'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();if(id==='report'){initReportMonth();renderMonthlyReport()}render()}
+function show(id){['home','plan','role','settings','monatsbericht'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();if(id==='monatsbericht')initMonatsbericht();render()}
 const SETTINGS_KEY='meine_schicht_stammdaten';
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch(e){return{}}}
 function openSettings(){loadSettings();show('settings')}
-function loadSettings(){let s=getSettings();document.getElementById('setEmployer').value=s.employer||'';document.getElementById('setName').value=s.name||'';document.getElementById('setPersonal').value=s.personal||'';document.getElementById('setHome1').value=s.home1||'';document.getElementById('setHome2').value=s.home2||''}
-function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employer:document.getElementById('setEmployer').value.trim(),name:document.getElementById('setName').value.trim(),personal:document.getElementById('setPersonal').value.trim(),home1:document.getElementById('setHome1').value.trim(),home2:document.getElementById('setHome2').value.trim()}));alert('Persönliche Daten gespeichert.')}
+function loadSettings(){let s=getSettings();document.getElementById('setEmployer').value=s.employer||'';document.getElementById('setName').value=s.name||'';document.getElementById('setPersonal').value=s.personal||''}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employer:document.getElementById('setEmployer').value.trim(),name:document.getElementById('setName').value.trim(),personal:document.getElementById('setPersonal').value.trim()}));alert('Persönliche Daten gespeichert.')}
 function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
 function simpleEvent(type){add(type)}
 function chooseOrt(promptText,includeEinsatzort=false){
- let s=getSettings();
- let home1=s.home1||'Hauptwohnung';
- let home2=s.home2||'Zweite Wohnung / Unterkunft';
- let options=includeEinsatzort ? '1 = '+home1+'\n2 = '+home2+'\n3 = Büro\n4 = Einsatzort\n5 = Anderer Ort' : '1 = '+home1+'\n2 = '+home2+'\n3 = Büro\n4 = Anderer Ort';
+ let options=includeEinsatzort ? '1 = Hauptwohnung\n2 = Zweite Wohnung / Unterkunft\n3 = Büro\n4 = Einsatzort\n5 = Anderer Ort' : '1 = Hauptwohnung\n2 = Zweite Wohnung / Unterkunft\n3 = Büro\n4 = Anderer Ort';
  let v=prompt(promptText+'\n\n'+options,'1');
  if(v===null)return null;
  if(includeEinsatzort && v==='4'){
@@ -844,7 +806,7 @@ function chooseOrt(promptText,includeEinsatzort=false){
    if(o===null||!o.trim())return null;
    return o.trim();
  }
- let m=includeEinsatzort ? {'1':home1,'2':home2,'3':'Büro'} : {'1':home1,'2':home2,'3':'Büro'};
+ let m=includeEinsatzort ? {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'} : {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'};
  if(v==='5' || (!includeEinsatzort && v==='4')){let o=prompt('Ort:','');if(o===null||!o.trim())return null;return o.trim();}
  return m[v]||null;
 }
@@ -860,13 +822,6 @@ function arrive(){
  let ort=chooseOrt('Wo ist dein Treffpunkt / Schichtbeginn?',true);
  if(!ort)return;
  add('Angekommen',{zielart:ort,ort});
-}
-function privateTrip(){
- let km=prompt('Private Fahrt mit Firmen-Kfz\n\nGefahrene private Kilometer:','');
- if(km===null||!km.trim())return;
- km=km.trim().replace(',','.');
- if(!/^\d+(?:\.\d+)?$/.test(km))return alert('Bitte eine gültige Kilometerzahl eingeben.');
- add('Private Fahrt mit Firmen-Kfz',{privateKm:km});
 }
 function beginShift(){let r=prompt('Funktion:\n1 AZF./RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'AZF./RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
 function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
@@ -891,7 +846,7 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
  '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div>';
- if(active)e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(active.fahrart)+'</div>';e.innerHTML+='<div style="margin-top:8px"><button class="small" onclick="add(\'Übernachtung\')">🏨 Übernachtung</button></div>';
+ if(active)e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(active.fahrart)+'</div>';
  renderEvents()}
 }
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
@@ -1169,143 +1124,6 @@ function dailyKmTotal(events){
  });
  return total;
 }
-
-function monthKeyFromDate(date){
- let m=String(date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
- return m?m[3]+'-'+m[2]:'';
-}
-function parseDateDE(s){
- let m=String(s||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
- return m?new Date(+m[3],+m[2]-1,+m[1]):null;
-}
-function timeToMinutes(t){
- let m=String(t||'').match(/^(\d{1,2}):(\d{2})/);
- return m?(+m[1])*60+(+m[2]):null;
-}
-function durationHours(from,to){
- let a=timeToMinutes(from),b=timeToMinutes(to);
- if(a===null||b===null)return null;
- let d=b-a;if(d<0)d+=1440;
- return d/60;
-}
-function plannedForDate(date){
- return get().filter(x=>x.kind==='plan'&&x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''))[0]||null;
-}
-function dayEvents(date){
- return get().filter(x=>x.kind==='event'&&x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-}
-function firstEvent(events,type){return events.find(x=>x.type===type)||null}
-function lastEvent(events,type){let a=events.filter(x=>x.type===type);return a[a.length-1]||null}
-function readinessHours(events,roleName){
- if(!['AZF./RbBau','BüP'].includes(roleName))return 0;
- let total=0;
- if(roleName==='AZF./RbBau'){
-   for(let i=0;i<events.length;i++){
-     let x=events[i],y=events[i+1];
-     if(!y)break;
-     if(['Halten / Warten','Nur beladen','Nur entladen','Beladen + Entladen'].includes(x.type)){
-       let d=durationHours(x.time,y.time);if(d!==null)total+=d;
-     }
-   }
- }
- if(roleName==='BüP'){
-   let last=null;
-   events.forEach(x=>{
-     if(x.type==='Zugmeldung erhalten'){
-       if(last!==null){let d=durationHours(last,x.time);if(d!==null)total+=d;}
-       last=x.time;
-     }
-   });
- }
- return total;
-}
-function pauseForWorkHours(h){
- if(h===null)return 0;
- if(h<=8.5)return h>=8.5?0.5:0;
- if(h<=10)return 0.75;
- if(h<=11)return 1;
- return 1;
-}
-function buildMonthlyRows(month){
- let byDate={};
- get().filter(x=>x.kind==='event'&&monthKeyFromDate(x.date)===month).forEach(x=>(byDate[x.date]||(byDate[x.date]=[])).push(x));
- let dates=Object.keys(byDate).sort((a,b)=>parseDateDE(a)-parseDateDE(b));
- return dates.map(date=>{
-   let ev=byDate[date].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-   let p=plannedForDate(date)||{};
-   let start=firstEvent(ev,'Abfahrt'), end=lastEvent(ev,'Ankunft / Tagesabschluss');
-   let shiftStart=firstEvent(ev,'Schichtbeginn'), shiftEnd=lastEvent(ev,'Schichtende');
-   let roleName=shiftStart?.role||p.role||'';
-   let workFrom=p.time?.split('-')[0]||'';
-   let workTo=p.time?.split('-')[1]||'';
-   let workHours=durationHours(workFrom,workTo);
-   let pause=pauseForWorkHours(workHours);
-   let actual=workHours===null?null:Math.max(0,workHours-pause);
-   let privateKm=ev.reduce((n,x)=>n+(kmNumber(x.privateKm)||0),0);
-   let dienstKm=dailyKmTotal(ev);
-   let overnight=ev.some(x=>x.type==='Übernachtung')?1:'';
-   let readiness=readinessHours(ev,roleName);
-   let outside=(start&&end)?durationHours(start.time,end.time):null;
-   let startPlace=start?.start||'';
-   let destination=end?.zielart||p.ort||'';
-   let employer=p.auftraggeber||'';
-   let workText=(workFrom&&workTo)?workFrom+'–'+workTo:'';
-   return {date,startPlace,destination,outside,km:dienstKm,privateKm,overnight,role:roleName,employer,workText,pause,actual,readiness};
- });
-}
-function initReportMonth(){
- let el=document.getElementById('reportMonth');if(!el)return;
- if(!el.value){let d=new Date();el.value=d.getFullYear()+'-'+pad(d.getMonth()+1);}
-}
-function fmtHours(h){
- return h===null||h===undefined||!Number.isFinite(h)?'':h.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:2});
-}
-function renderMonthlyReport(){
- let month=document.getElementById('reportMonth')?.value;if(!month)return;
- let rows=buildMonthlyRows(month);
- let totalWork=rows.reduce((n,r)=>n+(r.actual||0),0);
- let totalReady=rows.reduce((n,r)=>n+(r.readiness||0),0);
- let totalKm=rows.reduce((n,r)=>n+(r.km||0),0);
- let totalPrivate=rows.reduce((n,r)=>n+(r.privateKm||0),0);
- document.getElementById('reportSummary').innerHTML=
-   '<div class="report-summary">'+
-   '<div class="report-stat"><b>'+rows.length+'</b><span>Schichten</span></div>'+
-   '<div class="report-stat"><b>'+fmtHours(totalWork)+'</b><span>Arbeitszeit Std.</span></div>'+
-   '<div class="report-stat"><b>'+fmtHours(totalReady)+'</b><span>Bereitschaft Std.</span></div>'+
-   '<div class="report-stat"><b>'+fmtHours(totalKm)+'</b><span>Dienst-km</span></div>'+
-   '<div class="report-stat"><b>'+fmtHours(totalPrivate)+'</b><span>Privat-km</span></div>'+
-   '</div>';
- if(!rows.length){document.getElementById('monthlyReportTable').innerHTML='<div class="report-empty">Für diesen Monat sind noch keine Schichtdaten vorhanden.</div>';return;}
- let body=rows.map(r=>'<tr>'+
-   '<td>'+esc(r.date)+'</td><td>'+esc(r.startPlace)+'</td><td>'+esc(r.destination)+'</td>'+
-   '<td>'+esc(r.outside===null?'':fmtHours(r.outside))+'</td><td>'+fmtHours(r.km)+'</td><td>'+fmtHours(r.privateKm)+'</td>'+
-   '<td>'+esc(r.overnight)+'</td><td>'+esc(r.role)+'</td><td>'+esc(r.employer)+'</td><td>'+esc(r.workText)+'</td>'+
-   '<td>'+fmtHours(r.pause)+'</td><td>'+fmtHours(r.actual)+'</td><td>'+fmtHours(r.readiness)+'</td>'+
-   '</tr>').join('');
- document.getElementById('monthlyReportTable').innerHTML=
-   '<table class="report-table"><thead><tr>'+
-   '<th>Tag</th><th>von Wohnort</th><th>zur Baustelle</th><th>Reiseweg gesamt</th><th>Firmen-Kfz km</th><th>Privat km Firmen-Kfz</th>'+
-   '<th>Übernachtung</th><th>Eingesetzt als</th><th>Auftraggeber / Baustelle</th><th>Arbeitszeit von–bis</th><th>Pause</th><th>Tatsächliche Arbeitszeit</th><th>davon bezahlte Bereitschaft</th>'+
-   '</tr></thead><tbody>'+body+'</tbody></table>';
-}
-function exportMonthlyCSV(){
- let month=document.getElementById('reportMonth')?.value;if(!month)return;
- let rows=buildMonthlyRows(month);if(!rows.length)return alert('Für diesen Monat sind noch keine Schichtdaten vorhanden.');
- let header=['Tag','von Wohnort','zur Baustelle','Reiseweg gesamt','Firmen-Kfz km','Privat km Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber / Baustelle','Arbeitszeit von-bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
- let data=[header].concat(rows.map(r=>[r.date,r.startPlace,r.destination,fmtHours(r.outside),fmtHours(r.km),fmtHours(r.privateKm),r.overnight,r.role,r.employer,r.workText,fmtHours(r.pause),fmtHours(r.actual),fmtHours(r.readiness)]));
- let csv=data.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\\r\\n');
- let blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'});
- let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Monatsbericht_'+month+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-}
-function exportMonthlyPDF(){
- let month=document.getElementById('reportMonth')?.value;if(!month)return;
- let rows=buildMonthlyRows(month);if(!rows.length)return alert('Für diesen Monat sind noch keine Schichtdaten vorhanden.');
- let s=getSettings(),w=window.open('','_blank');if(!w)return alert('Pop-up blockiert.');
- let title='Monatsbericht '+month.split('-')[1]+'/'+month.split('-')[0];
- let body=rows.map(r=>'<tr><td>'+esc(r.date)+'</td><td>'+esc(r.startPlace)+'</td><td>'+esc(r.destination)+'</td><td>'+fmtHours(r.outside)+'</td><td>'+fmtHours(r.km)+'</td><td>'+fmtHours(r.privateKm)+'</td><td>'+esc(r.overnight)+'</td><td>'+esc(r.role)+'</td><td>'+esc(r.employer)+'</td><td>'+esc(r.workText)+'</td><td>'+fmtHours(r.pause)+'</td><td>'+fmtHours(r.actual)+'</td><td>'+fmtHours(r.readiness)+'</td></tr>').join('');
- w.document.write('<html><head><meta charset="utf-8"><title>'+title+'</title><style>body{font-family:Arial,sans-serif;margin:12mm;color:#17202a}h1{font-size:20px;margin:0 0 8px}p{font-size:11px}table{width:100%;border-collapse:collapse;font-size:7.5px}th,td{border:1px solid #777;padding:3px;vertical-align:top}th{background:#eee}@page{size:A4 landscape;margin:10mm}@media print{button{display:none}}</style></head><body><h1>Meine Schicht – '+esc(title)+'</h1><p><b>Mitarbeiter:</b> '+esc(s.name||'')+' &nbsp; <b>Personalnummer:</b> '+esc(s.personal||'')+' &nbsp; <b>Arbeitgeber:</b> '+esc(s.employer||'')+'</p><table><thead><tr><th>Tag</th><th>von Wohnort</th><th>zur Baustelle</th><th>Reiseweg gesamt</th><th>Firmen-Kfz km</th><th>Privat km Firmen-Kfz</th><th>ÜN</th><th>Eingesetzt als</th><th>Auftraggeber / Baustelle</th><th>Arbeitszeit</th><th>Pause</th><th>Tats. AZ</th><th>Bereitschaft</th></tr></thead><tbody>'+body+'</tbody></table><br><button onclick="print()">📄 Drucken / als PDF speichern</button></body></html>');
- w.document.close();
-}
 function exportPDF(){
  let a=get().filter(x=>x.kind==='event');if(!a.length)return alert('Noch keine Daten.');
  let s=getSettings();
@@ -1327,7 +1145,7 @@ function exportPDF(){
  w.document.write(`<html><head><meta charset="utf-8"><title>Meine Schicht</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
 <div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
 <div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
-<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);w.document.close()}
+<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button>\n<script>\nconst MONATSBERICHT_VORLAGE='./Monatsbericht_Vorlage.xlsx';\nfunction openMonatsbericht(){show('monatsbericht')}\nfunction initMonatsbericht(){const m=document.getElementById('mrMonth');if(m&&!m.value){const d=new Date();m.value=`${d.getFullYear()}-${pad(d.getMonth()+1)}`}}\nfunction createOriginalExcelTest(){\n const status=document.getElementById('mrStatus');\n if(typeof XLSX==='undefined'){status.textContent='Excel-Bibliothek nicht geladen.';return}\n const month=document.getElementById('mrMonth').value;const day=Number(document.getElementById('mrDay').value);\n if(!month||day<1||day>31){status.textContent='Bitte Monat und Tag wählen.';return}\n const [year,mon]=month.split('-').map(Number);const date=`${pad(day)}.${pad(mon)}.${year}`;\n fetch(MONATSBERICHT_VORLAGE,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Monatsbericht_Vorlage.xlsx nicht gefunden.');return r.arrayBuffer()}).then(buf=>{\n  const wb=XLSX.read(buf,{type:'array',cellFormula:true});const ws=wb.Sheets[wb.SheetNames[0]];\n  const events=get().filter(x=>x.kind==='event'&&x.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));\n  const plan=get().filter(x=>x.kind==='plan'&&x.date===date)[0]||{};const s=getSettings();\n  const dep=events.find(x=>x.type==='Abfahrt');const end=[...events].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');\n  const row=day<=15?8+day:13+day;\n  const set=(c,v)=>{if(v!==''&&v!=null)ws[c]={t:'s',v:String(v)}};\n  set(`A${row}`,day);set(`B${row}`,dep?.start||'');set(`C${row}`,plan.ort||end?.ort||'');\n  set(`D${row}`,dep&&end?`${dep.time.slice(0,5)}-${end.time.slice(0,5)}`:'');set(`F${row}`,s.kfz||'');\n  set(`K${row}`,plan.role||events.find(x=>x.role)?.role||'');set(`L${row}`,plan.auftraggeber||'');\n  set(`M${row}`,plan.time?.split('-')[0]||'');set(`N${row}`,plan.time?.split('-')[1]||'');\n  set('C5',s.name||'');set('I5',s.kfz||'');set('L5',document.getElementById('mrMonth').value);\n  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=`Monatsbericht_Test_${year}-${pad(mon)}-${pad(day)}.xlsx`;a.click();\n  status.textContent=`Test erfolgreich: ${date} wurde in die Originalvorlage übertragen (Zeile ${row}).`;\n }).catch(e=>{status.textContent='Fehler: '+e.message})\n}\n</script>\n</body></html>`);w.document.close()}
 function clearData(){
  if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
  const plans=get().filter(x=>x.kind==='plan');
