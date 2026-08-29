@@ -75,6 +75,12 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
     <div><label class="muted">Bestellte Schichtzeit</label><input id="metaShift" placeholder="z. B. 14.00 - 22.30"></div>
     <div><label class="muted">Kfz-Kennzeichen</label><input id="metaPlate" placeholder="Fahrzeug"></div>
     <div><label class="muted">Private km mit Firmen-Kfz</label><input id="metaPrivateKm" inputmode="decimal" placeholder="nur falls vorhanden"></div>
+    <div><label class="muted">🏨 Übernachtung</label>
+      <select id="metaOvernight">
+        <option value="">Nein / keine Übernachtung</option>
+        <option value="1">Ja – Übernachtung</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -216,7 +222,8 @@ function simulate(){
     client:document.getElementById('metaClient').value.trim(),
     plannedShift:document.getElementById('metaShift').value.trim(),
     plate:document.getElementById('metaPlate').value.trim(),
-    privateKm:document.getElementById('metaPrivateKm').value.trim()
+    privateKm:document.getElementById('metaPrivateKm').value.trim(),
+    overnight:document.getElementById('metaOvernight').value
   };
   localStorage.setItem(KEY+'_shiftmeta',JSON.stringify(meta));
 
@@ -406,7 +413,7 @@ function monthlyRows(){
       dayKm,
       '',
       m.privateKm||'',
-      end&&/Unterkunft|Hotel|Zweiter Wohnsitz/i.test(end.detail||'')?'1':'',
+      m.overnight==='1'?'1':'',
       ev.find(x=>x.role)?.role||'',
       m.client||'',
       ps?.start||'',
