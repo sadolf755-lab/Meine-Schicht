@@ -46,7 +46,18 @@ textarea,input,select{width:100%;background:#061522;color:#fff;border:1px solid 
     gleichzeitig eingefügt werden. Zeilen wie „Gefahrene Kilometer am Tag“ werden
     automatisch erkannt und nicht als Ereignis übernommen.
   </div>
-  <textarea id="input" placeholder="Beispiel:
+  
+  <div class="grid" style="margin-top:10px">
+    <div>
+      <label class="muted">📋 Auftraggeber der Schicht</label>
+      <input id="client" placeholder="z. B. Auftraggeber aus der Schicht">
+    </div>
+    <div>
+      <label class="muted">🕐 Bestellte Schichtzeit</label>
+      <input id="plannedShift" placeholder="z. B. 13:30–20:30">
+    </div>
+  </div>
+<textarea id="input" placeholder="Beispiel:
 25.08.2026 11:41:27 Abfahrt Start: Zweiter Wohnsitz / Unterkunft · KM Start: 55553
 25.08.2026 13:06:35 Angekommen Ziel: Einsatzort · Ort: Wolfratshausen
 25.08.2026 13:33:59 AZF./RbBau Schichtbeginn
@@ -99,7 +110,7 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 
 
 <div class="card">
-  <h2>5 · 📊 Excel-Testlabor v6</h2>
+  <h2>5 · 📊 Excel-Testlabor v7</h2>
   <div class="muted">
     Die Excel-Ausgabe folgt jetzt den gemeinsam festgelegten Regeln für Spalten A–Q. Es werden immer 31 Tageszeilen erzeugt; nicht benötigte Tage bleiben leer.
   </div>
@@ -240,6 +251,21 @@ function simulate(){
   const existingDayKm=(()=>{try{return JSON.parse(localStorage.getItem(KEY+'_dayKm')||'{}')}catch(e){return{}}})();
   Object.assign(existingDayKm,dayKmMap);
   localStorage.setItem(KEY+'_dayKm',JSON.stringify(existingDayKm));
+
+  const client=document.getElementById('client').value.trim();
+  const plannedShift=document.getElementById('plannedShift').value.trim();
+  const plannedMatch=plannedShift.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s*[–-]\s*(\d{1,2}:\d{2}(?::\d{2})?)$/);
+
+  // Die Angaben werden ausdrücklich als Schicht-Stammdaten gespeichert.
+  // Sie werden nicht aus Abfahrt/Tagesabschluss abgeleitet.
+  const dates=[...new Set(parsed.map(x=>x.date))];
+  parsed.forEach(e=>{
+    if(client) e.client=client;
+    if(plannedMatch){
+      e.plannedStart=plannedMatch[1];
+      e.plannedEnd=plannedMatch[2];
+    }
+  });
 
   const d=load();
   d.push(...parsed);
@@ -418,24 +444,16 @@ function buildExcelRows(){
   dates.forEach(date=>{
     const ev=g[date];
 
-    // Reisezeit: ausschließlich Abfahrt -> Tagesabschluss.
     const departure=ev.find(x=>x.type==='Abfahrt');
     const dayEnd=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
 
-    // Bestellte/geplante Schichtzeit: muss aus den Schichtdaten stammen.
-    // Bis diese Information im Rohformat separat vorliegt, verwenden wir
-    // ausschließlich explizit vorhandene geplante Schichtzeiten.
-    const plannedStart=ev.find(x=>x.type==='Bestellte Schichtzeit' || x.type==='Geplante Schichtzeit');
-    const plannedEnd=[...ev].reverse().find(x=>x.type==='Bestellte Schichtzeit' || x.type==='Geplante Schichtzeit');
-
-    // Fallback nur für die bisherige Teststruktur: Schichtbeginn/-ende
-    // stehen dort als die bestellte Schichtzeit. Nicht die tatsächliche
-    // Aufenthaltsdauer einzelner Tätigkeiten.
-    const shiftStart=plannedStart?.plannedStart || ev.find(x=>x.type==='Schichtbeginn');
-    const shiftEnd=plannedEnd?.plannedEnd || [...ev].reverse().find(x=>x.type==='Schichtende');
+    // Arbeitszeit: ausdrücklich bestellte Schichtzeit.
+    // Diese muss als plannedStart/plannedEnd in den Schichtdaten vorhanden sein.
+    const planned=ev.find(x=>x.plannedStart && x.plannedEnd);
+    const plannedStart=planned?.plannedStart || '';
+    const plannedEnd=planned?.plannedEnd || '';
 
     const arrival=ev.find(x=>x.type==='Angekommen');
-
     const explicitStart=departure?.kmStart ? km(departure.kmStart) : null;
     const explicitEnd=dayEnd?.kmEnd ? km(dayEnd.kmEnd) : null;
     const fallbackStart=explicitStart===null ? lastKm : null;
@@ -445,40 +463,25 @@ function buildExcelRows(){
     else if(explicitStart!==null) lastKm=explicitStart;
 
     const travelH=shiftDurationHours(departure?.time,dayEnd?.time);
-    const plannedH=shiftDurationHours(shiftStart?.time,shiftEnd?.time);
+    const plannedH=shiftDurationHours(plannedStart,plannedEnd);
     const pause=plannedH==null ? null : pauseHours(plannedH);
 
-    // P/Q:
-    // P entspricht der bestellten/geplanten Schichtzeit.
-    // Q bleibt leer und wird nicht automatisch berechnet.
-    const actualPaidHours=plannedH;
+    // P ist die bestellte/bezahlte Schichtdauer, nicht die tatsächlich benötigte Zeit.
+    const paidShiftHours=plannedH;
 
     const vonWohnort=departure?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
     const zurBaustelle=arrival?.ort || '';
     const role=ev.find(x=>x.role)?.role || '';
-
-    // Auftraggeber muss aus der Schicht stammen; niemals aus C ableiten.
-    const client =
-      ev.find(x=>x.client)?.client ||
-      ev.find(x=>x.auftraggeber)?.auftraggeber ||
-      ev.find(x=>x.type==='Auftraggeber')?.detail || '';
+    const client=planned?.client || ev.find(x=>x.client)?.client || '';
 
     byDate[date]={
-      date,
-      vonWohnort,
-      zurBaustelle,
-      reiseVon:departure?.time||'',
-      reiseBis:dayEnd?.time||'',
-      reiseweg:travelH,
-      firmenKm:dayKm,
+      date,vonWohnort,zurBaustelle,
+      reiseVon:departure?.time||'',reiseBis:dayEnd?.time||'',
+      reiseweg:travelH,firmenKm:dayKm,
       uebernachtung:'',
-      eingesetztAls:role,
-      auftraggeberBaustelle:client,
-      arbeitszeitVon:shiftStart?.time||'',
-      arbeitszeitBis:shiftEnd?.time||'',
-      pause,
-      actual:actualPaidHours,
-      bereitschaft:''
+      eingesetztAls:role,auftraggeberBaustelle:client,
+      arbeitszeitVon:plannedStart,arbeitszeitBis:plannedEnd,
+      pause,actual:paidShiftHours,bereitschaft:''
     };
   });
 
@@ -520,9 +523,9 @@ function buildExcelPreview(){
   const filled=excelRows.filter(r=>r.date).length;
   document.getElementById('excelMessage').innerHTML=
     `<span class="ok">✓ ${filled} vorhandene Tage auf 31 Tageszeilen verteilt.</span> `+
-    `M/N/P verwenden die bestellte Schichtzeit; D/E bleiben reine Reisezeit.`;
+    `M/N/P verwenden ausschließlich die ausdrücklich eingegebene bestellte Schichtzeit; D/E bleiben reine Reisezeit.`;
   document.getElementById('excelWarnings').innerHTML=
-    '<span class="ok">✓ Auftraggeber wird nur aus einem ausdrücklich in der Schicht hinterlegten Auftraggeber übernommen. Q bleibt leer.</span>';
+    '<span class="ok">✓ Auftraggeber und bestellte Schichtzeit werden nur aus den dafür vorgesehenen Schichtfeldern übernommen. Q bleibt leer.</span>';
 }
 
 function downloadExcel(){
