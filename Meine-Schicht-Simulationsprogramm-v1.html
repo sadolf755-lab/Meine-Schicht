@@ -211,13 +211,22 @@ function group(){
   return g;
 }
 
-function dailyKm(events){
+function dailyKm(events, fallbackStart=null){
   let total=0,start=null;
+
+  // Normalfall: KM Start und KM Ende stehen am selben Tag.
   for(const e of events){
     if(e.type==='Abfahrt' && e.kmStart) start=km(e.kmStart);
-    if(e.type==='Ankunft / Tagesabschluss' && e.kmEnd && start!==null){
+    if(e.type==='Ankunft / Tagesabschluss' && e.kmEnd){
       const end=km(e.kmEnd);
-      if(end!==null && end>=start) total+=end-start;
+
+      // Wenn an diesem Tag kein eigener KM-Start dokumentiert wurde,
+      // verwenden wir den letzten bekannten KM-Stand als Tagesstart.
+      // Dadurch werden z. B. reine Schicht-/Arbeits-Tage korrekt
+      // zwischen zwei bekannten Kilometerständen berücksichtigt.
+      if(start===null && fallbackStart!==null) start=fallbackStart;
+
+      if(end!==null && start!==null && end>=start) total+=end-start;
       start=null;
     }
   }
@@ -239,7 +248,32 @@ function shiftHours(events){
 
 function render(){
   const d=load(),g=group(),dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
-  const totalKm=dates.reduce((s,x)=>s+dailyKm(g[x]),0);
+  // Kilometer tageübergreifend berechnen: Fehlt an einem Tag der
+  // eigene KM-Start, wird der letzte bekannte KM-Endstand als Start
+  // dieses Tages verwendet.
+  let totalKm=0;
+  let lastKm=null;
+  const kmByDate={};
+
+  dates.forEach(x=>{
+    const ev=g[x];
+    const explicitStart=ev.find(e=>e.type==='Abfahrt' && e.kmStart);
+    const explicitEnd=[...ev].reverse().find(e=>e.type==='Ankunft / Tagesabschluss' && e.kmEnd);
+
+    const fallbackStart=explicitStart ? null : lastKm;
+    const dayKm=dailyKm(ev,fallbackStart);
+    kmByDate[x]=dayKm;
+    totalKm+=dayKm;
+
+    if(explicitEnd){
+      const end=km(explicitEnd.kmEnd);
+      if(end!==null) lastKm=end;
+    }else if(explicitStart){
+      const startKm=km(explicitStart.kmStart);
+      if(startKm!==null) lastKm=startKm;
+    }
+  });
+
   let totalHours=0;
   let knownHours=false;
   dates.forEach(x=>{const h=shiftHours(g[x]);if(h!==null){totalHours+=h;knownHours=true}});
@@ -256,7 +290,7 @@ function render(){
   }
 
   document.getElementById('days').innerHTML=dates.map(date=>{
-    const ev=g[date],kmDay=dailyKm(ev),h=shiftHours(ev);
+    const ev=g[date],kmDay=kmByDate[date]??0,h=shiftHours(ev);
     const role=ev.find(x=>x.role)?.role||'–';
     const start=ev.find(x=>x.type==='Abfahrt');
     const end=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
