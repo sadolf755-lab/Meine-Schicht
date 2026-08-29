@@ -72,7 +72,7 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
   <div class="muted">Diese Angaben gehören zur normalen Schicht. Sie werden später automatisch in den Monatsbericht übernommen.</div>
   <div class="grid">
     <div><label class="muted">Auftraggeber</label><input id="metaClient" placeholder="z. B. BM Bahndienste"></div>
-    <div><label class="muted">Bestellte Schichtzeit</label><input id="metaShift" placeholder="z. B. 14.00 - 22.30"></div>
+    <div><label class="muted">Bestellte Schichtzeit (optional)</label><input id="metaShift" placeholder="nur falls nicht im Datensatz vorhanden"></div>
     <div><label class="muted">Kfz-Kennzeichen</label><input id="metaPlate" placeholder="Fahrzeug"></div>
     <div><label class="muted">Private km mit Firmen-Kfz</label><input id="metaPrivateKm" inputmode="decimal" placeholder="nur falls vorhanden"></div>
     <div><label class="muted">🏨 Übernachtung</label>
@@ -394,31 +394,50 @@ function monthlyRows(){
   const g=group();
   const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
   const meta=getShiftMeta();
+  const allData=load();
+  const plans=allData.filter(x=>x.kind==='plan');
   const rows=[];
+
+  function plannedForDate(date){
+    if(!date)return null;
+    const same=plans.filter(p=>p.date===date);
+    if(!same.length)return null;
+    const roleMatch=meta.role ? same.find(p=>p.role===meta.role) : null;
+    return roleMatch || same[0];
+  }
+
   for(let day=1;day<=31;day++){
     const date=dates.find(d=>Number(d.slice(0,2))===day);
     const ev=date?g[date]:[];
     const abfahrt=ev.find(x=>x.type==='Abfahrt');
     const ankunft=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
-    const beginn=ev.find(x=>x.type==='Schichtbeginn');
-    const ende=ev.find(x=>x.type==='Schichtende');
-    const startOrt=abfahrt?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim()||'';
-    const zielOrt=ankunft?.detail?.match(/Ziel:\s*([^·]+)/i)?.[1]?.trim()||'';
-    const arbeitsVon=beginn?.time||'';
-    const arbeitsBis=ende?.time||'';
-    const shift=meta.plannedShift ? parsePlannedShift(meta.plannedShift) : null;
-    const workHours=shift ? reportDuration(shift.start,shift.end) : reportDuration(arbeitsVon,arbeitsBis);
+    const plan=plannedForDate(date);
+    const planned=parsePlannedShift(plan?.time||'');
+
+    const startOrt=abfahrt?.start||'';
+    const zielOrt=ankunft?.zielart||ankunft?.ort||'';
+    const kmDay=monthlyDayKmForDate(date,dates,g);
+
+    const workHours=planned ? reportDuration(planned.start,planned.end) : null;
     const pause=reportPause(workHours);
     const actual=(workHours==null||pause==null)?'':Math.max(0,workHours-pause).toLocaleString('de-DE',{maximumFractionDigits:2});
-    const kmDay=monthlyDayKmForDate(date,dates,g);
+
     rows.push([
       day,startOrt,zielOrt,
       abfahrt&&ankunft ? (abfahrt.time||'')+'–'+(ankunft.time||'') : '',
-      kmDay==null?'':kmDay,meta.plate||'',kmDay==null?'':kmDay,'',
-      meta.privateKm||'',(meta.overnight==='1'&&date)?'1':'',
-      ev.find(x=>x.role)?.role||'',meta.client||zielOrt||'',
-      shift?shift.start:arbeitsVon,shift?shift.end:arbeitsBis,
-      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}),actual,''
+      kmDay==null?'':kmDay,
+      meta.plate||'',
+      kmDay==null?'':kmDay,
+      '',
+      meta.privateKm||'',
+      (meta.overnight==='1'&&date)?'1':'',
+      plan?.role||ev.find(x=>x.role)?.role||'',
+      plan?.auftraggeber||meta.client||zielOrt||'',
+      planned?.start||'',
+      planned?.end||'',
+      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}),
+      actual,
+      ''
     ]);
   }
   return rows;
