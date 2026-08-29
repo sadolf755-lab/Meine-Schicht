@@ -403,7 +403,20 @@ Gefahrene Kilometer am Tag: 220 km`;
 }
 
 
-function getShiftMeta(){try{return JSON.parse(localStorage.getItem(KEY+'_shiftmeta')||'{}')}catch(e){return{}}}
+function getShiftMeta(){
+  const d=load();
+  const todayDate=today();
+  const plans=d.filter(x=>x.kind==='plan' && x.date===todayDate);
+  const p=plans[0]||{};
+  return {
+    plate:p.plate||p.kennzeichen||'',
+    client:p.auftraggeber||'',
+    role:p.role||'',
+    plannedShift:p.time||'',
+    overnight:p.overnight||'',
+    privateKm:p.privateKm||''
+  };
+}
 function parsePlannedShift(s){
   const m=(s||'').match(/^(\d{1,2})(?::|\.)(\d{2})\s*[–-]\s*(\d{1,2})(?::|\.)(\d{2})$/);
   return m?{start:String(m[1]).padStart(2,'0')+':'+m[2],end:String(m[3]).padStart(2,'0')+':'+m[4]}:null;
@@ -440,8 +453,9 @@ function monthlyRows(){
     const plan=plannedForDate(date);
     const planned=parsePlannedShift(plan?.time||'');
 
-    const startOrt=abfahrt?.start||'';
-    const zielOrt=ankunft?.zielart||ankunft?.ort||'';
+    const wohnort=abfahrt?.start||'';
+    const baustelle=plan?.ort || ankunft?.zielart || ankunft?.ort || '';
+    const reisezeit=abfahrt&&ankunft ? (abfahrt.time||'')+'–'+(ankunft.time||'') : '';
     const kmDay=monthlyDayKmForDate(date,dates,g);
 
     const workHours=planned ? reportDuration(planned.start,planned.end) : null;
@@ -449,21 +463,23 @@ function monthlyRows(){
     const actual=(workHours==null||pause==null)?'':Math.max(0,workHours-pause).toLocaleString('de-DE',{maximumFractionDigits:2});
 
     rows.push([
-      day,startOrt,zielOrt,
-      abfahrt&&ankunft ? (abfahrt.time||'')+'–'+(ankunft.time||'') : '',
-      kmDay==null?'':kmDay,
-      meta.plate||'',
-      kmDay==null?'':kmDay,
-      '',
-      meta.privateKm||'',
-      (meta.overnight==='1'&&date)?'1':'',
-      plan?.role||ev.find(x=>x.role)?.role||'',
-      plan?.auftraggeber||meta.client||zielOrt||'',
-      planned?.start||'',
-      planned?.end||'',
-      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}),
-      actual,
-      ''
+      day,                       // A Tag
+      wohnort,                  // B von Wohnort
+      baustelle,                // C zur Baustelle
+      reisezeit,                // D Reisezeit von-bis
+      kmDay==null?'':kmDay,     // E Reiseweg gesamt
+      meta.plate||'',            // F Kfz-Kennzeichen
+      kmDay==null?'':kmDay,     // G Firmen-km Wohnort <-> Baustelle
+      '',                       // H Privat-Kfz
+      meta.privateKm||'',       // I km privat mit Firmen-Kfz
+      (meta.overnight==='1'&&date)?'1':'', // J Übernachtung
+      plan?.role||ev.find(x=>x.role)?.role||'', // K Eingesetzt als
+      plan ? ((plan.auftraggeber||'') + (plan.ort ? (plan.auftraggeber?' / ':'') + plan.ort : '')) : (meta.client||baustelle||''), // L Auftraggeber/Baustelle
+      planned?.start||'',       // M Arbeitszeit von
+      planned?.end||'',         // N Arbeitszeit bis
+      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}), // O Pause
+      actual,                   // P Tatsächliche Arbeitszeit
+      ''                        // Q bezahlte Bereitschaft
     ]);
   }
   return rows;
