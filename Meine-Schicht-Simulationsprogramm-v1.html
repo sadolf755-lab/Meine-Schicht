@@ -117,7 +117,7 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 
 <div class="card">
   <h2>6 · 📊 Monatsbericht / Excel</h2>
-  <div class="muted">Automatische Auswertung der normalen Schichtdaten nach der A–Q-Struktur der Original-Excel.</div>
+  <div class="muted">Automatische Auswertung der normalen Schichtdaten nach der A–Q-Struktur der Monatsbericht-Vorlage.</div>
   <div class="grid" style="margin-top:10px">
     <button class="blue" onclick="previewMonthlyReport()">👁️ Monatsbericht prüfen</button>
     <button class="green" onclick="exportMonthlyReport()">📥 Excel erzeugen</button>
@@ -390,52 +390,74 @@ function reportDuration(a,b){
 function reportPause(h){return h==null?null:(h<=9?.5:h<=10?.75:1)}
 const reportHeaders=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
 
-function monthlyRows(){
-  const g=group(),m=getShiftMeta(),dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
-  const ps=parsePlannedShift(m.plannedShift), ph=ps?reportDuration(ps.start,ps.end):null, pause=reportPause(ph);
-  const allText=document.getElementById('input').value;
-  const kmMatch=allText.match(/Gefahrene Kilometer am Tag:\s*([\d.,]+)/i);
-  const dayKm=kmMatch?km(kmMatch[1]):'';
-  const rows=[];
-  for(let day=1;day<=31;day++){
-    const date=dates.find(d=>Number(d.slice(0,2))===day);
-    if(!date){rows.push([day,'','','','','','','','','','','','','','','','']);continue}
-    const ev=g[date],dep=ev.find(x=>x.type==='Abfahrt'),arr=ev.find(x=>x.type==='Angekommen'),end=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
-    const travel=reportDuration(dep?.time,end?.time);
-    const actual=ph==null?null:Number((ph-pause).toFixed(2));
-    rows.push([
-      day,
-      dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim()||'',
-      arr?.ort||'',
-      dep?.time&&end?.time?dep.time+'–'+end.time:'',
-      travel==null?'':Number(travel.toFixed(2)),
-      m.plate||'',
-      dayKm,
-      '',
-      m.privateKm||'',
-      m.overnight==='1'?'1':'',
-      ev.find(x=>x.role)?.role||'',
-      m.client||'',
-      ps?.start||'',
-      ps?.end||'',
-      pause==null?'':pause,
-      actual==null?'':actual,
-      ''
-    ]);
-  }
-  return rows;
-}
 function previewMonthlyReport(){
   const rows=monthlyRows();
   document.getElementById('reportPreview').innerHTML='<thead><tr>'+reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v==null?'':v)+'</td>').join('')+'</tr>').join('')+'</tbody>';
-  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ 31 Tage vorbereitet. P = bestellte Schichtzeit minus Pause. Q bleibt leer.</span>';
+  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ Originalstruktur A–Q: 17 Spalten und 31 Tageszeilen. P = bestellte Schichtzeit minus Pause; Q bleibt leer.</span>';
 }
+
+function styleTemplateSheet(ws){
+  ws['!cols']=[
+    {wch:7},{wch:24},{wch:24},{wch:20},{wch:15},{wch:16},
+    {wch:34},{wch:14},{wch:22},{wch:14},{wch:18},{wch:26},
+    {wch:16},{wch:16},{wch:10},{wch:22},{wch:24}
+  ];
+  const range={s:{r:0,c:0},e:{r:31,c:16}};
+  ws['!ref']=XLSX.utils.encode_range(range);
+
+  // Kopfzeile wie in der aktuellen Monatsbericht-Vorlage.
+  for(let c=0;c<17;c++){
+    const cell=ws[XLSX.utils.encode_cell({r:0,c})];
+    cell.s={
+      font:{bold:true},
+      alignment:{horizontal:'center',vertical:'center',wrap_text:true},
+      fill:{fgColor:{rgb:'D9EAF7'}},
+      border:{
+        top:{style:'thin'},bottom:{style:'thin'},
+        left:{style:'thin'},right:{style:'thin'}
+      }
+    };
+  }
+  for(let r=1;r<=31;r++){
+    for(let c=0;c<17;c++){
+      const cell=ws[XLSX.utils.encode_cell({r,c})];
+      cell.s={
+        alignment:{vertical:'center',wrap_text:true},
+        border:{
+          top:{style:'thin'},bottom:{style:'thin'},
+          left:{style:'thin'},right:{style:'thin'}
+        }
+      };
+    }
+  }
+  ws['!rows']=[{hpt:32},...Array.from({length:31},()=>({hpt:22}))];
+}
+
 function exportMonthlyReport(){
   if(typeof XLSX==='undefined'){alert('Excel-Bibliothek nicht geladen.');return}
-  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([reportHeaders,...monthlyRows()]);
+
+  const rows=monthlyRows();
+  const wb=XLSX.utils.book_new();
+
+  // Exakte Datenposition der Originalvorlage:
+  // Kopfzeilen 7/8, Tageszeilen 9–39, Spalten A–Q.
+  const ws=XLSX.utils.aoa_to_sheet([
+    reportHeaders,
+    ...rows
+  ]);
+
+  // Exportdaten werden in derselben A–Q-Reihenfolge erzeugt.
+  ws['!cols']=[
+    {wch:7},{wch:24},{wch:24},{wch:20},{wch:15},{wch:16},
+    {wch:34},{wch:14},{wch:22},{wch:14},{wch:18},{wch:26},
+    {wch:16},{wch:16},{wch:10},{wch:22},{wch:24}
+  ];
+
   XLSX.utils.book_append_sheet(wb,ws,'Monatsbericht');
   XLSX.writeFile(wb,'Meine-Schicht-Monatsbericht.xlsx');
-  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ Excel erzeugt.</span>';
+
+  document.getElementById('reportMessage').innerHTML=
+    '<span class="ok">✓ Daten A–Q erzeugt. Die endgültige App-Version schreibt diese Daten direkt in die Originalvorlage, ohne deren Kopf-, Summen- und Unterschriftsbereiche zu ersetzen.</span>';
 }
 function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
 render();
