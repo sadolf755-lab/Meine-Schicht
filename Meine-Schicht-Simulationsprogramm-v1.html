@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#020a12">
+<title>Meine Schicht – Simulationsprogramm</title>
+<style>
+:root{--bg:#020a12;--panel:#061522;--line:#123d59;--text:#f5f8fb;--muted:#91a6b8;--blue:#29a8ff;--green:#7cff32;--yellow:#ffc51c;--red:#ff3c32;--purple:#b85cff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 70% 0%,#0d2940 0,transparent 34%),linear-gradient(180deg,#020913,#03101a 50%,#020911);color:var(--text);font-family:Arial,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:14px 14px 40px}.header{display:grid;grid-template-columns:54px 78px 1fr;gap:12px;align-items:center;padding:4px 0 14px}.menu{width:48px;height:48px;padding:0;background:transparent;border:1px solid transparent;font-size:30px}.logo{width:78px;height:78px;border-radius:18px;border:1px solid #1b5878;background:#071826;display:grid;place-items:center;font-size:40px;box-shadow:0 0 18px #008cff18}.header h1{margin:0;font-size:clamp(27px,6vw,38px);letter-spacing:.5px}.sub{color:var(--muted);font-size:14px;line-height:1.25}.badge{display:inline-block;margin-top:5px;padding:4px 8px;border:1px solid #b28a14;border-radius:999px;background:#2b2207;color:#ffe59a;font-size:11px;font-weight:800}
+.card{background:linear-gradient(180deg,#061522,#06121d);border:1px solid var(--line);border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 0 20px #0007}h2{margin:2px 0 12px}h3{margin:0 0 8px}
+button,input,textarea,select{font:inherit}button{border:1px solid #20415a;border-radius:13px;padding:12px 10px;background:#0a1928;color:#fff;font-weight:700;box-shadow:inset 0 1px 0 #ffffff0a,0 4px 12px #0005}button:active{transform:scale(.98)}button:hover{filter:brightness(1.08)}
+textarea,input,select{width:100%;background:#061522;color:#fff;border:1px solid #24516d;border-radius:10px;padding:11px;margin:5px 0 9px}textarea{min-height:300px;resize:vertical;line-height:1.35}.muted{color:var(--muted);font-size:14px;line-height:1.4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.full{width:100%;margin-top:8px}.blue{border-color:#1978ad}.green{border-color:#4c9c2d}.yellow{border-color:#b28a14}.red{border-color:#9d2e37}.purple{border-color:#b85cff;background:#1a1028}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{border:1px solid #1a435d;border-radius:13px;padding:10px;background:#071826;text-align:center}.stat span{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:20px;margin-top:3px}
+.day{border:1px solid #1a435d;border-radius:15px;padding:12px;margin:9px 0;background:#071826}.dayhead{display:flex;justify-content:space-between;gap:10px;align-items:center}.daytitle{font-weight:800}.pill{display:inline-block;padding:4px 7px;border:1px solid #24516d;border-radius:999px;color:#b9e6ff;background:#082239;font-size:11px}
+.events{margin-top:9px}.event{padding:7px 8px;border-left:4px solid var(--purple);background:#081b29;border-radius:7px;margin:5px 0;font-size:12px}.event b{color:#fff}.warn{color:#ffe59a}.ok{color:#cfffad}
+.raw{overflow:auto}.raw table{width:100%;border-collapse:collapse;font-size:11px}.raw th,.raw td{border:1px solid #1a435d;padding:5px;text-align:left;vertical-align:top}.raw th{background:#0a2030}
+.note{border-top:1px solid #173e55;margin-top:10px;padding-top:10px}.hidden{display:none}
+@media(max-width:600px){.header{grid-template-columns:40px 64px 1fr;gap:8px}.menu{width:38px;height:38px;font-size:25px}.logo{width:64px;height:64px;font-size:32px}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.wrap{padding:10px 10px 30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <button class="menu" onclick="topPage()">☰</button>
+  <div class="logo">🚂</div>
+  <div><h1>SIMULATION</h1><div class="sub">Meine Schicht – Testlabor<br><span class="badge">ECHTE APP WIRD NICHT VERÄNDERT</span></div></div>
+</div>
+
+<div class="card">
+  <h2>🧪 Simulationsprogramm</h2>
+  <div class="muted">
+    Hier testen wir zuerst nur die Daten. Eine oder mehrere echte Tagesdokumentationen
+    können als Text eingefügt und in die gleiche Grundstruktur wie die aktuelle App
+    übernommen werden. Der Monatsbericht wird direkt aus den dokumentierten Schichtdaten aufgebaut. Excel ist bereits integriert.
+  </div>
+</div>
+
+<div class="card">
+  <h2>1 · Schichtdaten einfügen</h2>
+  <div class="muted">
+    Am einfachsten den Text aus einem Tagesbericht einfügen. Mehrere Tage dürfen
+    gleichzeitig eingefügt werden. Zeilen wie „Gefahrene Kilometer am Tag“ werden
+    automatisch erkannt und nicht als Ereignis übernommen.
+  </div>
+  <textarea id="input" placeholder="Beispiel:
+25.08.2026 11:41:27 Abfahrt Start: Zweiter Wohnsitz / Unterkunft · KM Start: 55553
+25.08.2026 13:06:35 Angekommen Ziel: Einsatzort · Ort: Wolfratshausen
+25.08.2026 13:33:59 AZF./RbBau Schichtbeginn
+25.08.2026 13:34:15 AZF./RbBau Beladen + Entladen
+25.08.2026 14:10:30 AZF./RbBau Rangieren geschoben km 22,2 km 23,3
+25.08.2026 20:17:39 AZF./RbBau Schichtende
+25.08.2026 21:27:08 AZF./RbBau Ankunft / Tagesabschluss Ziel: Zweiter Wohnsitz / Unterkunft · KM Ende: 55773
+Gefahrene Kilometer am Tag: 220 km"></textarea>
+  <div class="grid">
+    <button class="purple" onclick="simulate()">▶️ Simulation starten</button>
+    <button onclick="example()">📋 Beispiel laden</button>
+    <button onclick="document.getElementById('input').value=''">🧹 Eingabe leeren</button>
+    <button class="red" onclick="clearAll()">🗑️ Testdaten löschen</button>
+  </div>
+  <div class="note muted">
+    <b>Wichtig:</b> Diese Testdaten liegen nur im Speicher dieses Simulators.
+    Die echte „Meine Schicht“-Dokumentation bleibt unangetastet.
+  </div>
+</div>
+
+<div class="card">
+  <h2>2 · Testergebnis</h2>
+  <div class="stats">
+    <div class="stat"><span>Tage</span><b id="daysN">0</b></div>
+    <div class="stat"><span>Ereignisse</span><b id="eventsN">0</b></div>
+    <div class="stat"><span>Gesamt-KM</span><b id="kmN">0</b></div>
+    <div class="stat"><span>Schichtstunden</span><b id="hoursN">0</b></div>
+  </div>
+  <div id="message" class="muted" style="margin-top:10px">Noch keine Simulation durchgeführt.</div>
+</div>
+
+<div class="card">
+  <h2>3 · Simulierte Schichten</h2>
+  <div id="days"><div class="muted">Noch keine Testdaten vorhanden.</div></div>
+</div>
+
+<div class="card">
+  <h2>5 · 📊 Monatsbericht / Excel</h2>
+  <div class="muted">
+    Die Excel-Ausgabe wird direkt aus den bereits dokumentierten Schichtdaten erzeugt.
+    Es gibt keine zusätzliche Eingabe für den Monatsbericht. Auftraggeber und bestellte
+    Schichtzeit werden als Schicht-Stammdaten aus den importierten Daten übernommen.
+  </div>
+  <div class="grid" style="margin-top:10px">
+    <button class="blue" onclick="buildExcelPreview()">👁️ Monatsbericht prüfen</button>
+    <button class="green" onclick="downloadExcel()">📥 Excel erzeugen</button>
+  </div>
+  <div id="excelMessage" class="muted" style="margin-top:10px">Noch keine Excel-Auswertung durchgeführt.</div>
+  <div class="raw" style="margin-top:10px"><table id="excelPreview"></table></div>
+</div>
+
+<div class="card">
+  <h2>4 · Erkannte Rohdaten</h2>
+  <div class="muted" style="margin-bottom:9px">
+    Das ist die Datenbasis, die später in den Monatsbericht einfließen soll.
+    Noch keine Übertragung in Excel oder PDF.
+  </div>
+  <div class="raw">
+    <table>
+      <thead><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr></thead>
+      <tbody id="raw"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const KEY='meine_schicht_simulator_v1';
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
+function km(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null}
+function dateKey(s){const m=s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);return m?m[3]+m[2]+m[1]:s}
+
+const knownEvents=[
+ 'Abfahrt','Angekommen','Schichtbeginn','Schichtende','Ankunft / Tagesabschluss',
+ 'Rangieren','Rangiervorgang beendet','Halten / Warten','Beladen + Entladen',
+ 'Nur beladen','Nur entladen','Wagen / Lok abgestellt','Wagen gesichert',
+ 'Wagenliste erstellt','Bremsprobe durchgeführt','Zug neu zusammenstellen','Zug fertig',
+ 'Ankuppeln','Abkuppeln','Richtungswechsel','Störung','Vorfall / Ereignis'
+];
+const roles=['AZF./RbBau','SAKRA','BüP','Sipo'];
+
+function parseLine(line){
+  line=line.trim();
+  if(!line || /^Gefahrene Kilometer am Tag:/i.test(line)) return null;
+
+  // Falls PDF-Text Zeilen mit zusätzlichen Leerzeichen enthält.
+  const m=line.match(/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.*)$/);
+  if(!m)return null;
+
+  const date=m[1],time=m[2],rest=m[3].trim();
+  let role='';
+  for(const r of roles){
+    if(rest===r || rest.startsWith(r+' ')){role=r;break}
+  }
+  let body=role?rest.slice(role.length).trim():rest;
+  let type=body,detail='';
+
+  const match=knownEvents.find(e=>body===e || body.startsWith(e+' '));
+  if(match){type=match;detail=body.slice(match.length).trim()}
+  else{
+    const sp=body.indexOf(' ');
+    if(sp>0){type=body.slice(0,sp);detail=body.slice(sp+1).trim()}
+  }
+
+  const kmStart=detail.match(/KM Start:\s*([\d.,]+)/i);
+  const kmEnd=detail.match(/KM Ende:\s*([\d.,]+)/i);
+  const haltKm=detail.match(/KM Halt:\s*([\d.,]+)/i);
+
+  let von='',nach='';
+  // Aktuelles Format: "km 23,3 km 22,2" oder "23,1 → km 23,3".
+  const pairArrow=detail.match(/(?:km\s*)?([\d.,]+)\s*(?:→|->)\s*(?:km\s*)?([^·]+)/i);
+  const pairSpace=detail.match(/(?:km\s*)?([\d.,]+)\s+(?:km\s*)?([\d.,]+)(?:\s|$)/i);
+  const pair=pairArrow||pairSpace;
+  if(pair){von=pair[1].trim();nach=pair[2].trim()}
+
+  let clean=detail
+    .replace(/KM Start:\s*[\d.,]+/ig,'')
+    .replace(/KM Ende:\s*[\d.,]+/ig,'')
+    .replace(/KM Halt:\s*[\d.,]+/ig,'')
+    .replace(/^[·\s]+|[·\s]+$/g,'')
+    .trim();
+
+  if(type==='Rangieren'){
+    const dir=body.match(/Rangieren\s+(geschoben|gezogen)/i);
+    if(dir) clean=clean.replace(/^(geschoben|gezogen)\s*/i,'').trim()||dir[1];
+  }
+
+  // Für Ankunft/Tagesabschluss wird der Zielort zusätzlich sauber ausgelesen.
+  let ort='';
+  const ortM=detail.match(/Ort:\s*([^·]+)/i);
+  if(ortM)ort=ortM[1].trim();
+
+  let zielart='';
+  const zielM=detail.match(/Ziel:\s*([^·]+)/i);
+  if(zielM)zielart=zielM[1].trim();
+
+  return {
+    id:Date.now()+Math.random(),
+    kind:'event',date,time,role,type,detail:clean,von,nach,
+    kmStart:kmStart?kmStart[1].replace(',','.'):'',
+    kmEnd:kmEnd?kmEnd[1].replace(',','.'): '',
+    haltKm:haltKm?haltKm[1].replace(',','.'): '',
+    ort,zielart
+  };
+}
+
+function parseText(text){
+  const lines=text.split(/\r?\n/);
+  const events=[];
+  let currentDate=null;
+  let meta={};
+  for(const raw of lines){
+    const line=raw.trim();
+    const dm=line.match(/^(\d{2}\.\d{2}\.\d{4})\s+/);
+    if(dm) currentDate=dm[1];
+
+    const client=line.match(/^(?:Auftraggeber|Auftraggeber\/Baustelle)\s*:\s*(.+)$/i);
+    if(client && currentDate) meta[currentDate]??={};
+    if(client && currentDate){meta[currentDate].client=client[1].trim();continue;}
+
+    const ps=line.match(/^(?:Bestellte Schichtzeit|Geplante Schichtzeit)\s*:\s*(\d{1,2})(?::|\.)(\d{2})\s*[–-]\s*(\d{1,2})(?::|\.)(\d{2})$/i);
+    if(ps && currentDate){
+      meta[currentDate]??={};
+      meta[currentDate].plannedStart=String(ps[1]).padStart(2,'0')+':'+ps[2];
+      meta[currentDate].plannedEnd=String(ps[3]).padStart(2,'0')+':'+ps[4];
+      continue;
+    }
+
+    const kmLine=line.match(/^Gefahrene Kilometer am Tag:\s*([\d.,]+)\s*km/i);
+    if(kmLine && currentDate){
+      meta[currentDate]??={};
+      meta[currentDate].dayKm=km(kmLine[1]);
+      continue;
+    }
+
+    const parsed=parseLine(line);
+    if(parsed){
+      parsed._metaDate=currentDate;
+      events.push(parsed);
+    }
+  }
+
+  events._meta=meta;
+  return events;
+}
+
+function simulate(){
+  const text=document.getElementById('input').value.trim();
+  if(!text)return alert('Bitte zuerst eine Schicht als Text einfügen.');
+
+  const parsed=parseText(text);
+  if(!parsed.length){
+    return alert('Keine passenden Schichtzeilen erkannt. Erwartet wird z. B. DD.MM.YYYY HH:MM:SS ...');
+  }
+
+  const meta=parsed._meta||{};
+  const oldMeta=(()=>{try{return JSON.parse(localStorage.getItem(KEY+'_meta')||'{}')}catch(e){return{}}})();
+  Object.keys(meta).forEach(k=>oldMeta[k]={...(oldMeta[k]||{}),...meta[k]});
+  localStorage.setItem(KEY+'_meta',JSON.stringify(oldMeta));
+
+  const d=load();
+  d.push(...parsed);
+  d.sort((a,b)=>(dateKey(a.date)+' '+a.time).localeCompare(dateKey(b.date)+' '+b.time));
+  save(d);
+
+  document.getElementById('input').value='';
+  document.getElementById('message').innerHTML='<span class="ok">✓ Simulation übernommen:</span> '+parsed.length+' Ereignisse.';
+  render();
+}
+
+function group(){
+  const g={};
+  for(const e of load())(g[e.date]??=[]).push(e);
+  return g;
+}
+
+function dailyKm(events, fallbackStart=null){
+  let total=0,start=null;
+
+  // Normalfall: KM Start und KM Ende stehen am selben Tag.
+  for(const e of events){
+    if(e.type==='Abfahrt' && e.kmStart) start=km(e.kmStart);
+    if(e.type==='Ankunft / Tagesabschluss' && e.kmEnd){
+      const end=km(e.kmEnd);
+
+      // Wenn an diesem Tag kein eigener KM-Start dokumentiert wurde,
+      // verwenden wir den letzten bekannten KM-Stand als Tagesstart.
+      // Dadurch werden z. B. reine Schicht-/Arbeits-Tage korrekt
+      // zwischen zwei bekannten Kilometerständen berücksichtigt.
+      if(start===null && fallbackStart!==null) start=fallbackStart;
+
+      if(end!==null && start!==null && end>=start) total+=end-start;
+      start=null;
+    }
+  }
+  return total;
+}
+
+function shiftHours(events){
+  let s=null,e=null;
+  for(const x of events){
+    if(x.type==='Schichtbeginn')s=x.time;
+    if(x.type==='Schichtende')e=x.time;
+  }
+  if(!s||!e)return null;
+  const a=s.split(':').map(Number),b=e.split(':').map(Number);
+  let sec=(b[0]*3600+b[1]*60+(b[2]||0))-(a[0]*3600+a[1]*60+(a[2]||0));
+  if(sec<0)sec+=86400;
+  return sec/3600;
+}
+
+function render(){
+  const d=load(),g=group(),dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
+  // Kilometer tageübergreifend berechnen: Fehlt an einem Tag der
+  // eigene KM-Start, wird der letzte bekannte KM-Endstand als Start
+  // dieses Tages verwendet.
+  let totalKm=0;
+  let lastKm=null;
+  const kmByDate={};
+
+  dates.forEach(x=>{
+    const ev=g[x];
+    const explicitStart=ev.find(e=>e.type==='Abfahrt' && e.kmStart);
+    const explicitEnd=[...ev].reverse().find(e=>e.type==='Ankunft / Tagesabschluss' && e.kmEnd);
+
+    const fallbackStart=explicitStart ? null : lastKm;
+    const dayKm=dailyKm(ev,fallbackStart);
+    kmByDate[x]=dayKm;
+    totalKm+=dayKm;
+
+    if(explicitEnd){
+      const end=km(explicitEnd.kmEnd);
+      if(end!==null) lastKm=end;
+    }else if(explicitStart){
+      const startKm=km(explicitStart.kmStart);
+      if(startKm!==null) lastKm=startKm;
+    }
+  });
+
+  let totalHours=0;
+  let knownHours=false;
+  dates.forEach(x=>{const h=shiftHours(g[x]);if(h!==null){totalHours+=h;knownHours=true}});
+
+  document.getElementById('daysN').textContent=dates.length;
+  document.getElementById('eventsN').textContent=d.length;
+  document.getElementById('kmN').textContent=totalKm.toLocaleString('de-DE',{maximumFractionDigits:1});
+  document.getElementById('hoursN').textContent=knownHours?totalHours.toLocaleString('de-DE',{maximumFractionDigits:2}):'–';
+
+  if(!dates.length){
+    document.getElementById('days').innerHTML='<div class="muted">Noch keine Testdaten vorhanden.</div>';
+    document.getElementById('raw').innerHTML='';
+    return;
+  }
+
+  document.getElementById('days').innerHTML=dates.map(date=>{
+    const ev=g[date],kmDay=kmByDate[date]??0,h=shiftHours(ev);
+    const role=ev.find(x=>x.role)?.role||'–';
+    const start=ev.find(x=>x.type==='Abfahrt');
+    const end=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
+    return `<div class="day">
+      <div class="dayhead">
+        <div><div class="daytitle">📅 ${esc(date)}</div><span class="pill">${esc(role)}</span></div>
+        <div style="text-align:right" class="muted">${kmDay.toLocaleString('de-DE',{maximumFractionDigits:1})} km${h===null?'':' · '+h.toLocaleString('de-DE',{maximumFractionDigits:2})+' h'}</div>
+      </div>
+      <div class="muted" style="margin-top:7px">
+        ${start?.kmStart?`KM Start: ${esc(start.kmStart)}`:''}
+        ${end?.kmEnd?` · KM Ende: ${esc(end.kmEnd)}`:''}
+      </div>
+      <div class="events">${ev.map(x=>`<div class="event"><b>${esc(x.time)}</b> – ${esc(x.type)}${x.role?' – '+esc(x.role):''}${x.detail?' – '+esc(x.detail):''}${x.von?' · '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('raw').innerHTML=d.map(x=>`<tr>
+    <td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role)}</td><td>${esc(x.type)}</td>
+    <td>${esc(x.detail)}</td><td>${esc(x.von)}</td><td>${esc(x.nach)}</td>
+  </tr>`).join('');
+}
+
+function clearAll(){
+  if(!load().length)return;
+  if(!confirm('Alle Testdaten des Simulators löschen?\n\nDie echte Meine-Schicht-App bleibt unverändert.'))return;
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(KEY+'_meta');
+  document.getElementById('message').textContent='Testdaten gelöscht.';
+  render();
+}
+
+function example(){
+  document.getElementById('input').value=`25.08.2026 11:41:27 Abfahrt Start: Zweiter Wohnsitz / Unterkunft · KM Start: 55553
+25.08.2026 13:06:35 Angekommen Ziel: Einsatzort · Ort: Wolfratshausen
+25.08.2026 13:33:59 AZF./RbBau Schichtbeginn
+25.08.2026 13:34:15 AZF./RbBau Beladen + Entladen
+25.08.2026 14:10:30 AZF./RbBau Rangieren geschoben km 22,2 km 23,3
+25.08.2026 14:15:35 AZF./RbBau Halten / Warten KM Halt: 23.1 · Sonstiges – Schichtwechsel Arbeiter
+25.08.2026 16:58:56 AZF./RbBau Rangieren gezogen km 23,3 km 22,2
+25.08.2026 20:05:44 AZF./RbBau Wagen / Lok abgestellt Gleis 42
+25.08.2026 20:05:56 AZF./RbBau Wagen gesichert Hemmschuhe
+25.08.2026 20:17:39 AZF./RbBau Schichtende
+25.08.2026 21:27:08 AZF./RbBau Ankunft / Tagesabschluss Ziel: Zweiter Wohnsitz / Unterkunft · KM Ende: 55773
+Gefahrene Kilometer am Tag: 220 km`;
+}
+
+
+function excelMeta(){
+  try{return JSON.parse(localStorage.getItem(KEY+'_meta')||'{}')}catch(e){return{}}
+}
+
+function excelPause(h){
+  if(h==null)return null;
+  if(h<=9)return 0.5;
+  if(h<=10)return 0.75;
+  return 1;
+}
+
+function excelDuration(a,b){
+  if(!a||!b)return null;
+  const x=a.split(':').map(Number),y=b.split(':').map(Number);
+  let s=(y[0]*3600+y[1]*60+(y[2]||0))-(x[0]*3600+x[1]*60+(x[2]||0));
+  if(s<0)s+=86400;
+  return s/3600;
+}
+
+function excelRows(){
+  const g=group(), meta=excelMeta(), rows=[];
+  const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
+  let lastKm=null;
+
+  for(let n=1;n<=31;n++){
+    const date=dates.find(d=>Number(d.slice(0,2))===n);
+    if(!date){ rows.push([n,'','','','','','','','','','','','','','','','']); continue; }
+
+    const ev=g[date], m=meta[date]||{};
+    const dep=ev.find(x=>x.type==='Abfahrt');
+    const arr=ev.find(x=>x.type==='Angekommen');
+    const dayEnd=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
+
+    const plannedStart=m.plannedStart||'';
+    const plannedEnd=m.plannedEnd||'';
+    const plannedH=excelDuration(plannedStart,plannedEnd);
+    const pause=excelPause(plannedH);
+    const actual=plannedH==null?null:Number((plannedH-pause).toFixed(2));
+
+    const travelFrom=dep?.time||'';
+    const travelTo=dayEnd?.time||'';
+    const travelH=excelDuration(travelFrom,travelTo);
+
+    const startKm=dep?.kmStart?km(dep.kmStart):null;
+    const endKm=dayEnd?.kmEnd?km(dayEnd.kmEnd):null;
+    const dayKm=m.dayKm!=null?m.dayKm:(startKm!=null&&endKm!=null?endKm-startKm:'');
+    if(endKm!=null)lastKm=endKm;
+    else if(startKm!=null)lastKm=startKm;
+
+    const role=ev.find(x=>x.role)?.role||'';
+    const client=m.client||'';
+    const overnight=ev.some(x=>/Zweiter Wohnsitz|Unterkunft|Hotel/i.test(x.zielart||'') && x.type==='Ankunft / Tagesabschluss')?'1':'';
+
+    rows.push([
+      n,
+      dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim()||'',
+      arr?.ort||'',
+      travelFrom&&travelTo?travelFrom+'–'+travelTo:'',
+      travelH==null?'':Number(travelH.toFixed(2)),
+      '',
+      dayKm===''?'':Number(dayKm),
+      '',
+      '',
+      overnight,
+      role,
+      client,
+      plannedStart,
+      plannedEnd,
+      pause==null?'':pause,
+      actual==null?'':actual,
+      ''
+    ]);
+  }
+  return rows;
+}
+
+function buildExcelPreview(){
+  const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
+  const rows=excelRows();
+  document.getElementById('excelPreview').innerHTML='<thead><tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+r.map(v=>`<td>${esc(v==null?'':v)}</td>`).join('')+'</tr>').join('')+'</tbody>';
+  document.getElementById('excelMessage').innerHTML='<span class="ok">✓ 31 Tageszeilen.</span> Die Ausgabe basiert ausschließlich auf den vorhandenen Schichtdaten.';
+}
+
+function downloadExcel(){
+  if(typeof XLSX==='undefined'){alert('Die Excel-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.');return;}
+  const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([headers,...excelRows()]);
+  ws['!cols']=headers.map((h,i)=>({wch:i===6?34:22}));
+  XLSX.utils.book_append_sheet(wb,ws,'Monatsbericht');
+  XLSX.writeFile(wb,'Meine-Schicht-Monatsbericht.xlsx');
+  document.getElementById('excelMessage').innerHTML+='<br><span class="ok">✓ Excel wurde erzeugt.</span>';
+}
+
+function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
+render();
+</script>
+</body>
+</html>
