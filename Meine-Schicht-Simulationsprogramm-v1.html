@@ -106,7 +106,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
 function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
 function km(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null}
-function dateKey(s){const m=s.match(/^(\\d{2})\\.(\\d{2})\\.(\\d{4})$/);return m?m[3]+m[2]+m[1]:s}
+function dateKey(s){const m=s.match(/^(\d{2})\\.(\d{2})\\.(\d{4})$/);return m?m[3]+m[2]+m[1]:s}
 
 const knownEvents=[
  'Abfahrt','Angekommen','Schichtbeginn','Schichtende','Ankunft / Tagesabschluss',
@@ -122,7 +122,7 @@ function parseLine(line){
   if(!line || /^Gefahrene Kilometer am Tag:/i.test(line)) return null;
 
   // Falls PDF-Text Zeilen mit zusätzlichen Leerzeichen enthält.
-  const m=line.match(/^(\\d{2}\\.\\d{2}\\.\\d{4})\\s+(\\d{2}:\\d{2}(?::\\d{2})?)\\s+(.*)$/);
+  const m=line.match(/^(\d{2}\\.\d{2}\\.\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.*)$/);
   if(!m)return null;
 
   const date=m[1],time=m[2],rest=m[3].trim();
@@ -140,36 +140,36 @@ function parseLine(line){
     if(sp>0){type=body.slice(0,sp);detail=body.slice(sp+1).trim()}
   }
 
-  const kmStart=detail.match(/KM Start:\\s*([\\d.,]+)/i);
-  const kmEnd=detail.match(/KM Ende:\\s*([\\d.,]+)/i);
-  const haltKm=detail.match(/KM Halt:\\s*([\\d.,]+)/i);
+  const kmStart=detail.match(/KM Start:\s*([\d.,]+)/i);
+  const kmEnd=detail.match(/KM Ende:\s*([\d.,]+)/i);
+  const haltKm=detail.match(/KM Halt:\s*([\d.,]+)/i);
 
   let von='',nach='';
   // Aktuelles Format: "km 23,3 km 22,2" oder "23,1 → km 23,3".
-  const pairArrow=detail.match(/(?:km\\s*)?([\\d.,]+)\\s*(?:→|->)\\s*(?:km\\s*)?([^·]+)/i);
-  const pairSpace=detail.match(/(?:km\\s*)?([\\d.,]+)\\s+(?:km\\s*)?([\\d.,]+)(?:\\s|$)/i);
+  const pairArrow=detail.match(/(?:km\s*)?([\d.,]+)\s*(?:→|->)\s*(?:km\s*)?([^·]+)/i);
+  const pairSpace=detail.match(/(?:km\s*)?([\d.,]+)\s+(?:km\s*)?([\d.,]+)(?:\s|$)/i);
   const pair=pairArrow||pairSpace;
   if(pair){von=pair[1].trim();nach=pair[2].trim()}
 
   let clean=detail
-    .replace(/KM Start:\\s*[\\d.,]+/ig,'')
-    .replace(/KM Ende:\\s*[\\d.,]+/ig,'')
-    .replace(/KM Halt:\\s*[\\d.,]+/ig,'')
-    .replace(/^[·\\s]+|[·\\s]+$/g,'')
+    .replace(/KM Start:\s*[\d.,]+/ig,'')
+    .replace(/KM Ende:\s*[\d.,]+/ig,'')
+    .replace(/KM Halt:\s*[\d.,]+/ig,'')
+    .replace(/^[·\s]+|[·\s]+$/g,'')
     .trim();
 
   if(type==='Rangieren'){
-    const dir=body.match(/Rangieren\\s+(geschoben|gezogen)/i);
-    if(dir) clean=clean.replace(/^(geschoben|gezogen)\\s*/i,'').trim()||dir[1];
+    const dir=body.match(/Rangieren\s+(geschoben|gezogen)/i);
+    if(dir) clean=clean.replace(/^(geschoben|gezogen)\s*/i,'').trim()||dir[1];
   }
 
   // Für Ankunft/Tagesabschluss wird der Zielort zusätzlich sauber ausgelesen.
   let ort='';
-  const ortM=detail.match(/Ort:\\s*([^·]+)/i);
+  const ortM=detail.match(/Ort:\s*([^·]+)/i);
   if(ortM)ort=ortM[1].trim();
 
   let zielart='';
-  const zielM=detail.match(/Ziel:\\s*([^·]+)/i);
+  const zielM=detail.match(/Ziel:\s*([^·]+)/i);
   if(zielM)zielart=zielM[1].trim();
 
   return {
@@ -183,7 +183,7 @@ function parseLine(line){
 }
 
 function parseText(text){
-  return text.split(/\\r?\\n/).map(parseLine).filter(Boolean);
+  return text.split(/\r?\n/).map(parseLine).filter(Boolean);
 }
 
 function simulate(){
@@ -281,7 +281,7 @@ function render(){
 
 function clearAll(){
   if(!load().length)return;
-  if(!confirm('Alle Testdaten des Simulators löschen?\\n\\nDie echte Meine-Schicht-App bleibt unverändert.'))return;
+  if(!confirm('Alle Testdaten des Simulators löschen?\n\nDie echte Meine-Schicht-App bleibt unverändert.'))return;
   localStorage.removeItem(KEY);
   document.getElementById('message').textContent='Testdaten gelöscht.';
   render();
