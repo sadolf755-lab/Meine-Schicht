@@ -434,12 +434,15 @@ function monthlyRows(){
   const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
   const allData=load();
   const plans=allData.filter(x=>x.kind==='plan');
-  const settings=getSettings ? getSettings() : {};
   const rows=[];
 
   function plannedForDate(date){
     if(!date)return null;
-    const same=plans.filter(p=>p.date===date);
+    const same=plans.filter(p=>{
+      if(p.date===date)return true;
+      const m=(p.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return !!m && (m[3]+'.'+m[2]+'.'+m[1])===date;
+    });
     if(!same.length)return null;
     const eventRole=(g[date]||[]).find(x=>x.role)?.role||'';
     return same.find(p=>p.role===eventRole) || same[0];
