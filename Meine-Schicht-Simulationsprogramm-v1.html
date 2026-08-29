@@ -54,7 +54,7 @@ textarea,input,select{width:100%;background:#061522;color:#fff;border:1px solid 
     </div>
     <div>
       <label class="muted">🕐 Bestellte Schichtzeit</label>
-      <input id="plannedShift" placeholder="z. B. 13:30–20:30">
+      <input id="plannedShift" placeholder="z. B. 14.00 - 22.30">
     </div>
   </div>
 <textarea id="input" placeholder="Beispiel:
@@ -110,7 +110,7 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 
 
 <div class="card">
-  <h2>5 · 📊 Excel-Testlabor v7</h2>
+  <h2>5 · 📊 Excel-Testlabor v8</h2>
   <div class="muted">
     Die Excel-Ausgabe folgt jetzt den gemeinsam festgelegten Regeln für Spalten A–Q. Es werden immer 31 Tageszeilen erzeugt; nicht benötigte Tage bleiben leer.
   </div>
@@ -254,16 +254,20 @@ function simulate(){
 
   const client=document.getElementById('client').value.trim();
   const plannedShift=document.getElementById('plannedShift').value.trim();
-  const plannedMatch=plannedShift.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s*[–-]\s*(\d{1,2}:\d{2}(?::\d{2})?)$/);
+  const plannedMatch=plannedShift.match(/^(\d{1,2})(?::|\.)(\d{2})(?::(\d{2}))?\s*[–-]\s*(\d{1,2})(?::|\.)(\d{2})(?::(\d{2}))?$/);
+  const normalizedPlanned = plannedMatch ? {
+    start: `${String(plannedMatch[1]).padStart(2,'0')}:${plannedMatch[2]}${plannedMatch[3]?':'+plannedMatch[3]:''}`,
+    end: `${String(plannedMatch[4]).padStart(2,'0')}:${plannedMatch[5]}${plannedMatch[6]?':'+plannedMatch[6]:''}`
+  } : null;
 
   // Die Angaben werden ausdrücklich als Schicht-Stammdaten gespeichert.
   // Sie werden nicht aus Abfahrt/Tagesabschluss abgeleitet.
   const dates=[...new Set(parsed.map(x=>x.date))];
   parsed.forEach(e=>{
     if(client) e.client=client;
-    if(plannedMatch){
-      e.plannedStart=plannedMatch[1];
-      e.plannedEnd=plannedMatch[2];
+    if(normalizedPlanned){
+      e.plannedStart=normalizedPlanned.start;
+      e.plannedEnd=normalizedPlanned.end;
     }
   });
 
@@ -472,7 +476,7 @@ function buildExcelRows(){
     const vonWohnort=departure?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
     const zurBaustelle=arrival?.ort || '';
     const role=ev.find(x=>x.role)?.role || '';
-    const client=planned?.client || ev.find(x=>x.client)?.client || '';
+    const client=ev.find(x=>x.client && String(x.client).trim())?.client || '';
 
     byDate[date]={
       date,vonWohnort,zurBaustelle,
@@ -509,9 +513,9 @@ function buildExcelPreview(){
     excelRows.map((r,i)=>`<tr>
       <td>${i+1}</td><td>${esc(r.vonWohnort)}</td><td>${esc(r.zurBaustelle)}</td>
       <td>${r.reiseVon&&r.reiseBis?esc(r.reiseVon+'–'+r.reiseBis):''}</td>
-      <td>${r.reiseweg===''?'':Number(r.reiseweg).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
+      <td>${r.reiseweg==='' || r.reiseweg==null ? '' : Number(r.reiseweg).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
       <td></td>
-      <td>${r.firmenKm===''?'':Number(r.firmenKm).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
+      <td>${r.firmenKm==='' || r.firmenKm==null || Number(r.firmenKm)===0 ? '' : Number(r.firmenKm).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
       <td></td><td></td><td>${esc(r.uebernachtung)}</td>
       <td>${esc(r.eingesetztAls)}</td><td>${esc(r.auftraggeberBaustelle)}</td>
       <td>${esc(r.arbeitszeitVon)}</td><td>${esc(r.arbeitszeitBis)}</td>
