@@ -390,6 +390,53 @@ function reportDuration(a,b){
 function reportPause(h){return h==null?null:(h<=9?.5:h<=10?.75:1)}
 const reportHeaders=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
 
+function monthlyRows(){
+  const g=group();
+  const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
+  const meta=getShiftMeta();
+  const rows=[];
+  for(let day=1;day<=31;day++){
+    const date=dates.find(d=>Number(d.slice(0,2))===day);
+    const ev=date?g[date]:[];
+    const abfahrt=ev.find(x=>x.type==='Abfahrt');
+    const ankunft=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
+    const beginn=ev.find(x=>x.type==='Schichtbeginn');
+    const ende=ev.find(x=>x.type==='Schichtende');
+    const startOrt=abfahrt?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim()||'';
+    const zielOrt=ankunft?.detail?.match(/Ziel:\s*([^·]+)/i)?.[1]?.trim()||'';
+    const arbeitsVon=beginn?.time||'';
+    const arbeitsBis=ende?.time||'';
+    const shift=meta.plannedShift ? parsePlannedShift(meta.plannedShift) : null;
+    const workHours=shift ? reportDuration(shift.start,shift.end) : reportDuration(arbeitsVon,arbeitsBis);
+    const pause=reportPause(workHours);
+    const actual=(workHours==null||pause==null)?'':Math.max(0,workHours-pause).toLocaleString('de-DE',{maximumFractionDigits:2});
+    const kmDay=monthlyDayKmForDate(date,dates,g);
+    rows.push([
+      day,startOrt,zielOrt,
+      abfahrt&&ankunft ? (abfahrt.time||'')+'–'+(ankunft.time||'') : '',
+      kmDay==null?'':kmDay,meta.plate||'',kmDay==null?'':kmDay,'',
+      meta.privateKm||'',(meta.overnight==='1'&&date)?'1':'',
+      ev.find(x=>x.role)?.role||'',meta.client||zielOrt||'',
+      shift?shift.start:arbeitsVon,shift?shift.end:arbeitsBis,
+      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}),actual,''
+    ]);
+  }
+  return rows;
+}
+function monthlyDayKmForDate(date,dates,g){
+  if(!date)return null;
+  let lastKm=null;
+  for(const d of dates){
+    const ev=g[d];
+    const explicitStart=ev.find(e=>e.type==='Abfahrt'&&e.kmStart);
+    const explicitEnd=[...ev].reverse().find(e=>e.type==='Ankunft / Tagesabschluss'&&e.kmEnd);
+    if(d===date) return dailyKm(ev,explicitStart?null:lastKm);
+    if(explicitEnd){const n=km(explicitEnd.kmEnd);if(n!==null)lastKm=n;}
+    else if(explicitStart){const n=km(explicitStart.kmStart);if(n!==null)lastKm=n;}
+  }
+  return null;
+}
+
 function previewMonthlyReport(){
   const rows=monthlyRows();
   document.getElementById('reportPreview').innerHTML='<thead><tr>'+reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v==null?'':v)+'</td>').join('')+'</tr>').join('')+'</tbody>';
