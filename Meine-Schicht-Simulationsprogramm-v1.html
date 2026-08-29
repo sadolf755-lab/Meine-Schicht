@@ -25,7 +25,7 @@ textarea,input,select{width:100%;background:#061522;color:#fff;border:1px solid 
 <div class="wrap">
 
 <div class="header">
-  <button class="menu" onclick="topPage()">☰</button>
+  <button type="button" class="menu" onclick="topPage()">☰</button>
   <div class="logo">🚂</div>
   <div><h1>SIMULATION</h1><div class="sub">Meine Schicht – Testlabor<br><span class="badge">ECHTE APP WIRD NICHT VERÄNDERT</span></div></div>
 </div>
@@ -56,10 +56,10 @@ textarea,input,select{width:100%;background:#061522;color:#fff;border:1px solid 
 25.08.2026 21:27:08 AZF./RbBau Ankunft / Tagesabschluss Ziel: Zweiter Wohnsitz / Unterkunft · KM Ende: 55773
 Gefahrene Kilometer am Tag: 220 km"></textarea>
   <div class="grid">
-    <button class="purple" onclick="simulate()">▶️ Simulation starten</button>
-    <button onclick="example()">📋 Beispiel laden</button>
-    <button onclick="document.getElementById('input').value=''">🧹 Eingabe leeren</button>
-    <button class="red" onclick="clearAll()">🗑️ Testdaten löschen</button>
+    <button type="button" class="purple" onclick="simulate()">▶️ Simulation starten</button>
+    <button type="button" onclick="example()">📋 Beispiel laden</button>
+    <button type="button" onclick="document.getElementById('input').value=''">🧹 Eingabe leeren</button>
+    <button type="button" class="red" onclick="clearAll()">🗑️ Testdaten löschen</button>
   </div>
   <div class="note muted">
     <b>Wichtig:</b> Diese Testdaten liegen nur im Speicher dieses Simulators.
@@ -119,8 +119,8 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
   <h2>6 · 📊 Monatsbericht / Excel</h2>
   <div class="muted">Automatische Auswertung der normalen Schichtdaten nach der A–Q-Struktur der Monatsbericht-Vorlage.</div>
   <div class="grid" style="margin-top:10px">
-    <button class="blue" onclick="previewMonthlyReport()">👁️ Monatsbericht prüfen</button>
-    <button class="green" onclick="exportMonthlyReport()">📥 Excel erzeugen</button>
+    <button type="button" class="blue" onclick="window.previewMonthlyReport()">👁️ Monatsbericht prüfen</button>
+    <button type="button" class="green" onclick="window.exportMonthlyReport()">📥 Excel erzeugen</button>
   </div>
   <div id="reportMessage" class="muted" style="margin-top:10px">Noch keine Auswertung.</div>
   <div class="raw" style="margin-top:10px"><table id="reportPreview"></table></div>
@@ -461,6 +461,11 @@ function exportMonthlyReport(){
 }
 function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
 render();
+
+
+/* Robuste Button-Anbindung für das Testlabor */
+window.previewMonthlyReport = previewMonthlyReport;
+window.exportMonthlyReport = exportMonthlyReport;
 </script>
 </body>
 </html>
