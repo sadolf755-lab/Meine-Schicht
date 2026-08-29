@@ -214,7 +214,33 @@ function parseLine(line){
 }
 
 function parseText(text){
-  return text.split(/\r?\n/).map(parseLine).filter(Boolean);
+  const result=[];
+  for(const raw of text.split(/\r?\n/)){
+    const line=raw.trim();
+    if(!line)continue;
+
+    // Geplante Schicht aus Meine Schicht:
+    // PLAN|DD.MM.YYYY|HH:MM-HH:MM|Rolle|Einsatzort|Auftraggeber
+    if(/^PLAN\|/i.test(line)){
+      const p=line.split('|').map(x=>x.trim());
+      if(p.length>=3 && /^\d{2}\.\d{2}\.\d{4}$/.test(p[1]) && /^\d{2}:\d{2}-\d{2}:\d{2}$/.test(p[2])){
+        result.push({
+          id:Date.now()+Math.random(),
+          kind:'plan',
+          date:p[1],
+          time:p[2],
+          role:p[3]||'',
+          ort:p[4]||'',
+          auftraggeber:p[5]||''
+        });
+        continue;
+      }
+    }
+
+    const e=parseLine(line);
+    if(e)result.push(e);
+  }
+  return result;
 }
 
 function simulate(){
@@ -232,7 +258,7 @@ function simulate(){
 
   const parsed=parseText(text);
   if(!parsed.length){
-    return alert('Keine passenden Schichtzeilen erkannt. Erwartet wird z. B. DD.MM.YYYY HH:MM:SS ...');
+    return alert('Keine passenden Schichtzeilen erkannt. Erwartet werden Ereigniszeilen oder PLAN|Datum|Zeit|Rolle|Ort|Auftraggeber.');
   }
 
   const d=load();
@@ -241,7 +267,7 @@ function simulate(){
   save(d);
 
   document.getElementById('input').value='';
-  document.getElementById('message').innerHTML='<span class="ok">✓ Simulation übernommen:</span> '+parsed.length+' Ereignisse.';
+  document.getElementById('message').innerHTML='<span class="ok">✓ Simulation übernommen:</span> '+parsed.filter(x=>x.kind==='event').length+' Ereignisse + '+parsed.filter(x=>x.kind==='plan').length+' geplante Schichten.';
   render();
 }
 
