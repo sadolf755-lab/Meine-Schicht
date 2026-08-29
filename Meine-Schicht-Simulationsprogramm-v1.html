@@ -35,7 +35,7 @@ textarea,input,select{width:100%;background:#061522;color:#fff;border:1px solid 
   <div class="muted">
     Hier testen wir zuerst nur die Daten. Eine oder mehrere echte Tagesdokumentationen
     können als Text eingefügt und in die gleiche Grundstruktur wie die aktuelle App
-    übernommen werden. Der Monatsbericht wird direkt aus den dokumentierten Schichtdaten aufgebaut. Excel ist bereits integriert.
+    übernommen werden. Der Monatsbericht wird automatisch aus den normalen Schichtdaten aufgebaut; Excel ist integriert.
   </div>
 </div>
 
@@ -68,7 +68,18 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 </div>
 
 <div class="card">
-  <h2>2 · Testergebnis</h2>
+  <h2>2 · Schicht-Stammdaten</h2>
+  <div class="muted">Diese Angaben gehören zur normalen Schicht. Sie werden später automatisch in den Monatsbericht übernommen.</div>
+  <div class="grid">
+    <div><label class="muted">Auftraggeber</label><input id="metaClient" placeholder="z. B. BM Bahndienste"></div>
+    <div><label class="muted">Bestellte Schichtzeit</label><input id="metaShift" placeholder="z. B. 14.00 - 22.30"></div>
+    <div><label class="muted">Kfz-Kennzeichen</label><input id="metaPlate" placeholder="Fahrzeug"></div>
+    <div><label class="muted">Private km mit Firmen-Kfz</label><input id="metaPrivateKm" inputmode="decimal" placeholder="nur falls vorhanden"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>3 · Testergebnis</h2>
   <div class="stats">
     <div class="stat"><span>Tage</span><b id="daysN">0</b></div>
     <div class="stat"><span>Ereignisse</span><b id="eventsN">0</b></div>
@@ -79,27 +90,12 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 </div>
 
 <div class="card">
-  <h2>3 · Simulierte Schichten</h2>
+  <h2>4 · Simulierte Schichten</h2>
   <div id="days"><div class="muted">Noch keine Testdaten vorhanden.</div></div>
 </div>
 
 <div class="card">
-  <h2>5 · 📊 Monatsbericht / Excel</h2>
-  <div class="muted">
-    Die Excel-Ausgabe wird direkt aus den bereits dokumentierten Schichtdaten erzeugt.
-    Es gibt keine zusätzliche Eingabe für den Monatsbericht. Auftraggeber und bestellte
-    Schichtzeit werden als Schicht-Stammdaten aus den importierten Daten übernommen.
-  </div>
-  <div class="grid" style="margin-top:10px">
-    <button class="blue" onclick="buildExcelPreview()">👁️ Monatsbericht prüfen</button>
-    <button class="green" onclick="downloadExcel()">📥 Excel erzeugen</button>
-  </div>
-  <div id="excelMessage" class="muted" style="margin-top:10px">Noch keine Excel-Auswertung durchgeführt.</div>
-  <div class="raw" style="margin-top:10px"><table id="excelPreview"></table></div>
-</div>
-
-<div class="card">
-  <h2>4 · Erkannte Rohdaten</h2>
+  <h2>5 · Erkannte Rohdaten</h2>
   <div class="muted" style="margin-bottom:9px">
     Das ist die Datenbasis, die später in den Monatsbericht einfließen soll.
     Noch keine Übertragung in Excel oder PDF.
@@ -111,8 +107,21 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
     </table>
   </div>
 </div>
+</div>
+
+<div class="card">
+  <h2>6 · 📊 Monatsbericht / Excel</h2>
+  <div class="muted">Automatische Auswertung der normalen Schichtdaten nach der A–Q-Struktur der Original-Excel.</div>
+  <div class="grid" style="margin-top:10px">
+    <button class="blue" onclick="previewMonthlyReport()">👁️ Monatsbericht prüfen</button>
+    <button class="green" onclick="exportMonthlyReport()">📥 Excel erzeugen</button>
+  </div>
+  <div id="reportMessage" class="muted" style="margin-top:10px">Noch keine Auswertung.</div>
+  <div class="raw" style="margin-top:10px"><table id="reportPreview"></table></div>
+</div>
 
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -199,46 +208,18 @@ function parseLine(line){
 }
 
 function parseText(text){
-  const lines=text.split(/\r?\n/);
-  const events=[];
-  let currentDate=null;
-  let meta={};
-  for(const raw of lines){
-    const line=raw.trim();
-    const dm=line.match(/^(\d{2}\.\d{2}\.\d{4})\s+/);
-    if(dm) currentDate=dm[1];
-
-    const client=line.match(/^(?:Auftraggeber|Auftraggeber\/Baustelle)\s*:\s*(.+)$/i);
-    if(client && currentDate) meta[currentDate]??={};
-    if(client && currentDate){meta[currentDate].client=client[1].trim();continue;}
-
-    const ps=line.match(/^(?:Bestellte Schichtzeit|Geplante Schichtzeit)\s*:\s*(\d{1,2})(?::|\.)(\d{2})\s*[–-]\s*(\d{1,2})(?::|\.)(\d{2})$/i);
-    if(ps && currentDate){
-      meta[currentDate]??={};
-      meta[currentDate].plannedStart=String(ps[1]).padStart(2,'0')+':'+ps[2];
-      meta[currentDate].plannedEnd=String(ps[3]).padStart(2,'0')+':'+ps[4];
-      continue;
-    }
-
-    const kmLine=line.match(/^Gefahrene Kilometer am Tag:\s*([\d.,]+)\s*km/i);
-    if(kmLine && currentDate){
-      meta[currentDate]??={};
-      meta[currentDate].dayKm=km(kmLine[1]);
-      continue;
-    }
-
-    const parsed=parseLine(line);
-    if(parsed){
-      parsed._metaDate=currentDate;
-      events.push(parsed);
-    }
-  }
-
-  events._meta=meta;
-  return events;
+  return text.split(/\r?\n/).map(parseLine).filter(Boolean);
 }
 
 function simulate(){
+  const meta={
+    client:document.getElementById('metaClient').value.trim(),
+    plannedShift:document.getElementById('metaShift').value.trim(),
+    plate:document.getElementById('metaPlate').value.trim(),
+    privateKm:document.getElementById('metaPrivateKm').value.trim()
+  };
+  localStorage.setItem(KEY+'_shiftmeta',JSON.stringify(meta));
+
   const text=document.getElementById('input').value.trim();
   if(!text)return alert('Bitte zuerst eine Schicht als Text einfügen.');
 
@@ -246,11 +227,6 @@ function simulate(){
   if(!parsed.length){
     return alert('Keine passenden Schichtzeilen erkannt. Erwartet wird z. B. DD.MM.YYYY HH:MM:SS ...');
   }
-
-  const meta=parsed._meta||{};
-  const oldMeta=(()=>{try{return JSON.parse(localStorage.getItem(KEY+'_meta')||'{}')}catch(e){return{}}})();
-  Object.keys(meta).forEach(k=>oldMeta[k]={...(oldMeta[k]||{}),...meta[k]});
-  localStorage.setItem(KEY+'_meta',JSON.stringify(oldMeta));
 
   const d=load();
   d.push(...parsed);
@@ -373,8 +349,7 @@ function render(){
 function clearAll(){
   if(!load().length)return;
   if(!confirm('Alle Testdaten des Simulators löschen?\n\nDie echte Meine-Schicht-App bleibt unverändert.'))return;
-  localStorage.removeItem(KEY);
-  localStorage.removeItem(KEY+'_meta');
+  localStorage.removeItem(KEY); localStorage.removeItem(KEY+'_shiftmeta');
   document.getElementById('message').textContent='Testdaten gelöscht.';
   render();
 }
@@ -395,74 +370,47 @@ Gefahrene Kilometer am Tag: 220 km`;
 }
 
 
-function excelMeta(){
-  try{return JSON.parse(localStorage.getItem(KEY+'_meta')||'{}')}catch(e){return{}}
+function getShiftMeta(){try{return JSON.parse(localStorage.getItem(KEY+'_shiftmeta')||'{}')}catch(e){return{}}}
+function parsePlannedShift(s){
+  const m=(s||'').match(/^(\d{1,2})(?::|\.)(\d{2})\s*[–-]\s*(\d{1,2})(?::|\.)(\d{2})$/);
+  return m?{start:String(m[1]).padStart(2,'0')+':'+m[2],end:String(m[3]).padStart(2,'0')+':'+m[4]}:null;
 }
-
-function excelPause(h){
-  if(h==null)return null;
-  if(h<=9)return 0.5;
-  if(h<=10)return 0.75;
-  return 1;
-}
-
-function excelDuration(a,b){
+function reportDuration(a,b){
   if(!a||!b)return null;
   const x=a.split(':').map(Number),y=b.split(':').map(Number);
-  let s=(y[0]*3600+y[1]*60+(y[2]||0))-(x[0]*3600+x[1]*60+(x[2]||0));
-  if(s<0)s+=86400;
-  return s/3600;
+  let s=(y[0]*3600+y[1]*60)-(x[0]*3600+x[1]*60); if(s<0)s+=86400; return s/3600;
 }
+function reportPause(h){return h==null?null:(h<=9?.5:h<=10?.75:1)}
+const reportHeaders=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
 
-function excelRows(){
-  const g=group(), meta=excelMeta(), rows=[];
-  const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
-  let lastKm=null;
-
-  for(let n=1;n<=31;n++){
-    const date=dates.find(d=>Number(d.slice(0,2))===n);
-    if(!date){ rows.push([n,'','','','','','','','','','','','','','','','']); continue; }
-
-    const ev=g[date], m=meta[date]||{};
-    const dep=ev.find(x=>x.type==='Abfahrt');
-    const arr=ev.find(x=>x.type==='Angekommen');
-    const dayEnd=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
-
-    const plannedStart=m.plannedStart||'';
-    const plannedEnd=m.plannedEnd||'';
-    const plannedH=excelDuration(plannedStart,plannedEnd);
-    const pause=excelPause(plannedH);
-    const actual=plannedH==null?null:Number((plannedH-pause).toFixed(2));
-
-    const travelFrom=dep?.time||'';
-    const travelTo=dayEnd?.time||'';
-    const travelH=excelDuration(travelFrom,travelTo);
-
-    const startKm=dep?.kmStart?km(dep.kmStart):null;
-    const endKm=dayEnd?.kmEnd?km(dayEnd.kmEnd):null;
-    const dayKm=m.dayKm!=null?m.dayKm:(startKm!=null&&endKm!=null?endKm-startKm:'');
-    if(endKm!=null)lastKm=endKm;
-    else if(startKm!=null)lastKm=startKm;
-
-    const role=ev.find(x=>x.role)?.role||'';
-    const client=m.client||'';
-    const overnight=ev.some(x=>/Zweiter Wohnsitz|Unterkunft|Hotel/i.test(x.zielart||'') && x.type==='Ankunft / Tagesabschluss')?'1':'';
-
+function monthlyRows(){
+  const g=group(),m=getShiftMeta(),dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
+  const ps=parsePlannedShift(m.plannedShift), ph=ps?reportDuration(ps.start,ps.end):null, pause=reportPause(ph);
+  const allText=document.getElementById('input').value;
+  const kmMatch=allText.match(/Gefahrene Kilometer am Tag:\s*([\d.,]+)/i);
+  const dayKm=kmMatch?km(kmMatch[1]):'';
+  const rows=[];
+  for(let day=1;day<=31;day++){
+    const date=dates.find(d=>Number(d.slice(0,2))===day);
+    if(!date){rows.push([day,'','','','','','','','','','','','','','','','']);continue}
+    const ev=g[date],dep=ev.find(x=>x.type==='Abfahrt'),arr=ev.find(x=>x.type==='Angekommen'),end=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
+    const travel=reportDuration(dep?.time,end?.time);
+    const actual=ph==null?null:Number((ph-pause).toFixed(2));
     rows.push([
-      n,
+      day,
       dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim()||'',
       arr?.ort||'',
-      travelFrom&&travelTo?travelFrom+'–'+travelTo:'',
-      travelH==null?'':Number(travelH.toFixed(2)),
+      dep?.time&&end?.time?dep.time+'–'+end.time:'',
+      travel==null?'':Number(travel.toFixed(2)),
+      m.plate||'',
+      dayKm,
       '',
-      dayKm===''?'':Number(dayKm),
-      '',
-      '',
-      overnight,
-      role,
-      client,
-      plannedStart,
-      plannedEnd,
+      m.privateKm||'',
+      end&&/Unterkunft|Hotel|Zweiter Wohnsitz/i.test(end.detail||'')?'1':'',
+      ev.find(x=>x.role)?.role||'',
+      m.client||'',
+      ps?.start||'',
+      ps?.end||'',
       pause==null?'':pause,
       actual==null?'':actual,
       ''
@@ -470,26 +418,18 @@ function excelRows(){
   }
   return rows;
 }
-
-function buildExcelPreview(){
-  const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
-  const rows=excelRows();
-  document.getElementById('excelPreview').innerHTML='<thead><tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+
-    rows.map(r=>'<tr>'+r.map(v=>`<td>${esc(v==null?'':v)}</td>`).join('')+'</tr>').join('')+'</tbody>';
-  document.getElementById('excelMessage').innerHTML='<span class="ok">✓ 31 Tageszeilen.</span> Die Ausgabe basiert ausschließlich auf den vorhandenen Schichtdaten.';
+function previewMonthlyReport(){
+  const rows=monthlyRows();
+  document.getElementById('reportPreview').innerHTML='<thead><tr>'+reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v==null?'':v)+'</td>').join('')+'</tr>').join('')+'</tbody>';
+  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ 31 Tage vorbereitet. P = bestellte Schichtzeit minus Pause. Q bleibt leer.</span>';
 }
-
-function downloadExcel(){
-  if(typeof XLSX==='undefined'){alert('Die Excel-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen.');return;}
-  const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet([headers,...excelRows()]);
-  ws['!cols']=headers.map((h,i)=>({wch:i===6?34:22}));
+function exportMonthlyReport(){
+  if(typeof XLSX==='undefined'){alert('Excel-Bibliothek nicht geladen.');return}
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([reportHeaders,...monthlyRows()]);
   XLSX.utils.book_append_sheet(wb,ws,'Monatsbericht');
   XLSX.writeFile(wb,'Meine-Schicht-Monatsbericht.xlsx');
-  document.getElementById('excelMessage').innerHTML+='<br><span class="ok">✓ Excel wurde erzeugt.</span>';
+  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ Excel erzeugt.</span>';
 }
-
 function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
 render();
 </script>
