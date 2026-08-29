@@ -99,11 +99,9 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 
 
 <div class="card">
-  <h2>5 · 📊 Excel-Testlabor v3</h2>
+  <h2>5 · 📊 Excel-Testlabor v5</h2>
   <div class="muted">
-    Die Vorschau trennt jetzt sauber zwischen direkt erkannten Daten,
-    berechneten Werten und noch nicht belegbaren Feldern. Auffällige oder
-    fehlende Schichtdaten werden nicht automatisch erfunden.
+    Die Excel-Ausgabe folgt jetzt den gemeinsam festgelegten Regeln für Spalten A–Q. Es werden immer 31 Tageszeilen erzeugt; nicht benötigte Tage bleiben leer.
   </div>
   <div class="grid">
     <button class="blue" onclick="buildExcelPreview()">👁️ Vorschau prüfen</button>
@@ -392,131 +390,143 @@ Gefahrene Kilometer am Tag: 220 km`;
 
 
 
+
+
 let excelRows = [];
 
-function dayKmMeta(events){
-  // v3: Tages-km werden als Tageswert erkannt, nicht als Ereignis verworfen.
-  return events._dayKm ?? null;
+function shiftDurationHours(start,end){
+  if(!start||!end) return null;
+  const a=start.split(':').map(Number), b=end.split(':').map(Number);
+  let sec=(b[0]*3600+b[1]*60+(b[2]||0))-(a[0]*3600+a[1]*60+(a[2]||0));
+  if(sec<0) sec+=86400;
+  return sec/3600;
 }
 
-function extractDayKmFromRaw(){
-  const map={};
-  // Die aktuelle Eingabestruktur kann Tages-km-Zeilen enthalten. Sie werden
-  // beim Parsen separat gespeichert.
-  return map;
+function pauseHours(h){
+  if(h==null) return null;
+  if(h<=9) return 0.5;
+  if(h<=10) return 0.75;
+  return 1;
+}
+
+function travelHours(start,end){
+  return shiftDurationHours(start,end);
 }
 
 function buildExcelRows(){
   const d=load(), g=group(), dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
   let lastKm=null;
-  const rows=[], warnings=[];
+  const byDate={};
 
   dates.forEach(date=>{
     const ev=g[date];
-    const startTravel=ev.find(x=>x.type==='Abfahrt');
-    const arrival=ev.find(x=>x.type==='Angekommen');
-    const shiftStart=ev.find(x=>x.type==='Schichtbeginn');
-    const shiftEnd=[...ev].reverse().find(x=>x.type==='Schichtende');
+
+    // Travel time is ONLY Abfahrt -> Ankunft / Tagesabschluss.
+    const departure=ev.find(x=>x.type==='Abfahrt');
     const dayEnd=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
 
-    const explicitStart=startTravel?.kmStart ? km(startTravel.kmStart) : null;
-    const explicitEnd=dayEnd?.kmEnd ? km(dayEnd.kmEnd) : null;
+    // Work time is ONLY Schichtbeginn -> Schichtende.
+    const shiftStart=ev.find(x=>x.type==='Schichtbeginn');
+    const shiftEnd=[...ev].reverse().find(x=>x.type==='Schichtende');
 
-    let dayKm = ev._dayKm != null ? Number(ev._dayKm) : null;
-    if(dayKm===null){
-      const fallbackStart=explicitStart===null ? lastKm : null;
-      dayKm=dailyKm(ev,fallbackStart);
-    }
+    const arrival=ev.find(x=>x.type==='Angekommen');
+
+    const explicitStart=departure?.kmStart ? km(departure.kmStart) : null;
+    const explicitEnd=dayEnd?.kmEnd ? km(dayEnd.kmEnd) : null;
+    const fallbackStart=explicitStart===null ? lastKm : null;
+    const dayKm=ev._dayKm!=null ? Number(ev._dayKm) : dailyKm(ev,fallbackStart);
 
     if(explicitEnd!==null) lastKm=explicitEnd;
     else if(explicitStart!==null) lastKm=explicitStart;
 
-    const workH=shiftHours(ev);
+    const travelH=travelHours(departure?.time,dayEnd?.time);
+    const shiftH=shiftDurationHours(shiftStart?.time,shiftEnd?.time);
+    const pause=shiftH==null ? null : pauseHours(shiftH);
+    const actual=shiftH==null ? null : Math.max(0,shiftH-pause);
+
+    const vonWohnort=departure?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
+    const zurBaustelle=arrival?.ort || '';
     const role=ev.find(x=>x.role)?.role || '';
 
-    // Fachlich: "von Wohnort" kommt aus Start:, "zur Baustelle" aus Ort:.
-    // Zielart ist nur die Zielkategorie und wird nicht als Baustellenname benutzt.
-    const vonWohnort=startTravel?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
-    const zurBaustelle=arrival?.ort || '';
-
-    if(!startTravel) warnings.push(`${date}: Abfahrt/Startort fehlt.`);
-    if(!arrival) warnings.push(`${date}: Angekommen/Einsatzort fehlt.`);
-    if(!shiftStart) warnings.push(`${date}: Schichtbeginn fehlt.`);
-    if(!shiftEnd) warnings.push(`${date}: Schichtende fehlt.`);
-    if(dayKm===null || dayKm===0) warnings.push(`${date}: Reiseweg konnte nicht sicher aus Tagesdaten bestimmt werden.`);
-    if(shiftStart && shiftEnd && workH!==null && workH < 1) warnings.push(`${date}: ungewöhnlich kurze Schichtzeit (${fmtHours(workH)} h) – Rohdaten prüfen.`);
-
-    rows.push({
-      tag:date,
+    byDate[date]={
+      date,
       vonWohnort,
       zurBaustelle,
-      zeit:(shiftStart&&shiftEnd)?`${shiftStart.time}–${shiftEnd.time}`:'',
-      reiseweg:dayKm,
-      kennzeichen:'',
-      firmenKfzKm:(explicitStart!==null&&explicitEnd!==null)?`${explicitStart.toLocaleString('de-DE')}–${explicitEnd.toLocaleString('de-DE')}`:'',
-      privatKfz:'',
-      kmPrivatFirmenKfz:'',
+      reiseVon:departure?.time||'',
+      reiseBis:dayEnd?.time||'',
+      reiseweg:travelH,
+      firmenKm:dayKm,
       uebernachtung:'',
       eingesetztAls:role,
       auftraggeberBaustelle:'',
-      arbeitszeitVon:shiftStart?.time || '',
-      arbeitszeitBis:shiftEnd?.time || '',
-      pause:'',
-      arbeitszeit:workH,
-      bezahltBereitschaft:'',
-      _warnings:warnings.filter(w=>w.startsWith(date+':'))
-    });
+      arbeitszeitVon:shiftStart?.time||'',
+      arbeitszeitBis:shiftEnd?.time||'',
+      pause,
+      actual,
+      bereitschaft:''
+    };
   });
 
-  return {rows,warnings};
+  const rows=[];
+  for(let n=1;n<=31;n++){
+    const match=Object.values(byDate).find(r=>{
+      const m=r.date.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      return m && Number(m[1])===n;
+    });
+    rows.push(match || {
+      date:null,vonWohnort:'',zurBaustelle:'',reiseVon:'',reiseBis:'',
+      reiseweg:'',firmenKm:'',uebernachtung:'',eingesetztAls:'',
+      auftraggeberBaustelle:'',arbeitszeitVon:'',arbeitszeitBis:'',
+      pause:'',actual:'',bereitschaft:''
+    });
+  }
+  return rows;
 }
 
 function buildExcelPreview(){
-  const result=buildExcelRows();
-  excelRows=result.rows;
-  const headers=['Tag','von Wohnort','zur Baustelle','Zeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','Firmen-Kfz km','Privat Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
+  excelRows=buildExcelRows();
+  const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
   const table=document.getElementById('excelPreview');
 
   table.innerHTML='<thead><tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+
-    excelRows.map(r=>`<tr>
-      <td>${esc(r.tag)}</td><td>${esc(r.vonWohnort)}</td><td>${esc(r.zurBaustelle)}</td>
-      <td>${esc(r.zeit)}</td><td>${r.reiseweg==null?'':r.reiseweg.toLocaleString('de-DE',{maximumFractionDigits:1})}</td>
-      <td></td><td>${esc(r.firmenKfzKm)}</td><td></td><td></td><td></td>
+    excelRows.map((r,i)=>`<tr>
+      <td>${i+1}</td><td>${esc(r.vonWohnort)}</td><td>${esc(r.zurBaustelle)}</td>
+      <td>${r.reiseVon&&r.reiseBis?esc(r.reiseVon+'–'+r.reiseBis):''}</td>
+      <td>${r.reiseweg===''?'':Number(r.reiseweg).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
+      <td></td>
+      <td>${r.firmenKm===''?'':Number(r.firmenKm).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
+      <td></td><td></td><td>${esc(r.uebernachtung)}</td>
       <td>${esc(r.eingesetztAls)}</td><td></td>
-      <td>${esc(r.arbeitszeitVon)}</td><td>${esc(r.arbeitszeitBis)}</td><td></td>
-      <td>${r.arbeitszeit==null?'':fmtHours(r.arbeitszeit)}</td><td></td>
+      <td>${esc(r.arbeitszeitVon)}</td><td>${esc(r.arbeitszeitBis)}</td>
+      <td>${r.pause===''?'':Number(r.pause).toLocaleString('de-DE')}</td>
+      <td>${r.actual===''?'':Number(r.actual).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
+      <td></td>
     </tr>`).join('')+'</tbody>';
 
-  document.getElementById('excelMessage').innerHTML =
-    `<span class="ok">✓ ${excelRows.length} Tage geprüft.</span> Direkte Zuordnung wurde von Berechnungsfeldern getrennt.`;
-
-  document.getElementById('excelWarnings').innerHTML =
-    result.warnings.length
-      ? `<span class="warn">⚠️ ${result.warnings.length} Prüfhinweis(e):</span><br>${result.warnings.map(esc).join('<br>')}`
-      : '<span class="ok">✓ Keine Auffälligkeiten in den vorhandenen Rohdaten.</span>';
+  const filled=excelRows.filter(r=>r.date).length;
+  document.getElementById('excelMessage').innerHTML=
+    `<span class="ok">✓ ${filled} vorhandene Tage auf 31 Tageszeilen verteilt.</span> `+
+    `Reisezeit (D/E) und Schichtzeit (M/N/P) werden jetzt strikt getrennt.`;
+  document.getElementById('excelWarnings').innerHTML=
+    '<span class="ok">✓ M/N = Schichtbeginn/-ende. D = Abfahrt/Tagesabschluss. P = Schichtdauer minus Pause.</span>';
 }
 
 function downloadExcel(){
   if(!excelRows.length) buildExcelPreview();
-  if(!excelRows.length){ alert('Keine Testdaten vorhanden.'); return; }
-
   const wb=XLSX.utils.book_new();
-  const headers=['Tag','von Wohnort','zur Baustelle','Zeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','Firmen-Kfz km','Privat Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
-  const data=[headers,...excelRows.map(r=>[
-    r.tag,r.vonWohnort,r.zurBaustelle,r.zeit,r.reiseweg ?? '',r.kennzeichen,r.firmenKfzKm,
-    r.privatKfz,r.kmPrivatFirmenKfz,r.uebernachtung,r.eingesetztAls,r.auftraggeberBaustelle,
-    r.arbeitszeitVon,r.arbeitszeitBis,r.pause,r.arbeitszeit ?? '',r.bezahltBereitschaft
+  const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
+  const data=[headers,...excelRows.map((r,i)=>[
+    i+1,r.vonWohnort,r.zurBaustelle,
+    r.reiseVon&&r.reiseBis ? r.reiseVon+'–'+r.reiseBis : '',
+    r.reiseweg,r.kennzeichen||'',r.firmenKm,'',r.kmPrivatFirmenKfz||'',r.uebernachtung,
+    r.eingesetztAls,r.auftraggeberBaustelle,r.arbeitszeitVon,r.arbeitszeitBis,
+    r.pause,r.actual,''
   ])];
-
   const ws=XLSX.utils.aoa_to_sheet(data);
-  ws['!cols']=headers.map(()=>({wch:20}));
+  ws['!cols']=headers.map((h,i)=>({wch:i===6?34:22}));
   XLSX.utils.book_append_sheet(wb,ws,'Testlabor');
-  XLSX.writeFile(wb,'Meine-Schicht-Testlabor-Excel-v3.xlsx');
-  document.getElementById('excelMessage').innerHTML += ' <span class="ok">✓ Test-Excel erstellt.</span>';
-}
-
-function fmtHours(h){
-  return h==null ? '' : h.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  XLSX.writeFile(wb,'Meine-Schicht-Testlabor-Excel-v5.xlsx');
+  document.getElementById('excelMessage').innerHTML += ' <span class="ok">✓ Test-Excel v5 erstellt.</span>';
 }
 
 function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
