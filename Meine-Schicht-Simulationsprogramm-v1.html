@@ -432,17 +432,17 @@ const reportHeaders=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','
 function monthlyRows(){
   const g=group();
   const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
-  const meta=getShiftMeta();
   const allData=load();
   const plans=allData.filter(x=>x.kind==='plan');
+  const settings=getSettings ? getSettings() : {};
   const rows=[];
 
   function plannedForDate(date){
     if(!date)return null;
     const same=plans.filter(p=>p.date===date);
     if(!same.length)return null;
-    const roleMatch=meta.role ? same.find(p=>p.role===meta.role) : null;
-    return roleMatch || same[0];
+    const eventRole=(g[date]||[]).find(x=>x.role)?.role||'';
+    return same.find(p=>p.role===eventRole) || same[0];
   }
 
   for(let day=1;day<=31;day++){
@@ -462,24 +462,29 @@ function monthlyRows(){
     const pause=reportPause(workHours);
     const actual=(workHours==null||pause==null)?'':Math.max(0,workHours-pause).toLocaleString('de-DE',{maximumFractionDigits:2});
 
+    const auftraggeber=plan?.auftraggeber||'';
+    const auftragBaustelle=auftraggeber
+      ? (baustelle ? auftraggeber+' / '+baustelle : auftraggeber)
+      : baustelle;
+
     rows.push([
-      day,                       // A Tag
-      wohnort,                  // B von Wohnort
-      baustelle,                // C zur Baustelle
-      reisezeit,                // D Reisezeit von-bis
-      kmDay==null?'':kmDay,     // E Reiseweg gesamt
-      meta.plate||'',            // F Kfz-Kennzeichen
-      kmDay==null?'':kmDay,     // G Firmen-km Wohnort <-> Baustelle
-      '',                       // H Privat-Kfz
-      meta.privateKm||'',       // I km privat mit Firmen-Kfz
-      (meta.overnight==='1'&&date)?'1':'', // J Übernachtung
-      plan?.role||ev.find(x=>x.role)?.role||'', // K Eingesetzt als
-      plan ? ((plan.auftraggeber||'') + (plan.ort ? (plan.auftraggeber?' / ':'') + plan.ort : '')) : (meta.client||baustelle||''), // L Auftraggeber/Baustelle
-      planned?.start||'',       // M Arbeitszeit von
-      planned?.end||'',         // N Arbeitszeit bis
-      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}), // O Pause
-      actual,                   // P Tatsächliche Arbeitszeit
-      ''                        // Q bezahlte Bereitschaft
+      day,
+      wohnort,
+      baustelle,
+      reisezeit,
+      kmDay==null?'':kmDay,
+      plan?.plate||plan?.kennzeichen||'',
+      kmDay==null?'':kmDay,
+      '',
+      '',
+      plan?.overnight ? '1' : '',
+      plan?.role||ev.find(x=>x.role)?.role||'',
+      auftragBaustelle,
+      planned?.start||'',
+      planned?.end||'',
+      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}),
+      actual,
+      ''
     ]);
   }
   return rows;
