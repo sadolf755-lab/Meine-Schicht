@@ -99,7 +99,7 @@ Gefahrene Kilometer am Tag: 220 km"></textarea>
 
 
 <div class="card">
-  <h2>5 · 📊 Excel-Testlabor v5</h2>
+  <h2>5 · 📊 Excel-Testlabor v6</h2>
   <div class="muted">
     Die Excel-Ausgabe folgt jetzt den gemeinsam festgelegten Regeln für Spalten A–Q. Es werden immer 31 Tageszeilen erzeugt; nicht benötigte Tage bleiben leer.
   </div>
@@ -392,6 +392,7 @@ Gefahrene Kilometer am Tag: 220 km`;
 
 
 
+
 let excelRows = [];
 
 function shiftDurationHours(start,end){
@@ -409,10 +410,6 @@ function pauseHours(h){
   return 1;
 }
 
-function travelHours(start,end){
-  return shiftDurationHours(start,end);
-}
-
 function buildExcelRows(){
   const d=load(), g=group(), dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
   let lastKm=null;
@@ -421,13 +418,21 @@ function buildExcelRows(){
   dates.forEach(date=>{
     const ev=g[date];
 
-    // Travel time is ONLY Abfahrt -> Ankunft / Tagesabschluss.
+    // Reisezeit: ausschließlich Abfahrt -> Tagesabschluss.
     const departure=ev.find(x=>x.type==='Abfahrt');
     const dayEnd=[...ev].reverse().find(x=>x.type==='Ankunft / Tagesabschluss');
 
-    // Work time is ONLY Schichtbeginn -> Schichtende.
-    const shiftStart=ev.find(x=>x.type==='Schichtbeginn');
-    const shiftEnd=[...ev].reverse().find(x=>x.type==='Schichtende');
+    // Bestellte/geplante Schichtzeit: muss aus den Schichtdaten stammen.
+    // Bis diese Information im Rohformat separat vorliegt, verwenden wir
+    // ausschließlich explizit vorhandene geplante Schichtzeiten.
+    const plannedStart=ev.find(x=>x.type==='Bestellte Schichtzeit' || x.type==='Geplante Schichtzeit');
+    const plannedEnd=[...ev].reverse().find(x=>x.type==='Bestellte Schichtzeit' || x.type==='Geplante Schichtzeit');
+
+    // Fallback nur für die bisherige Teststruktur: Schichtbeginn/-ende
+    // stehen dort als die bestellte Schichtzeit. Nicht die tatsächliche
+    // Aufenthaltsdauer einzelner Tätigkeiten.
+    const shiftStart=plannedStart?.plannedStart || ev.find(x=>x.type==='Schichtbeginn');
+    const shiftEnd=plannedEnd?.plannedEnd || [...ev].reverse().find(x=>x.type==='Schichtende');
 
     const arrival=ev.find(x=>x.type==='Angekommen');
 
@@ -439,14 +444,24 @@ function buildExcelRows(){
     if(explicitEnd!==null) lastKm=explicitEnd;
     else if(explicitStart!==null) lastKm=explicitStart;
 
-    const travelH=travelHours(departure?.time,dayEnd?.time);
-    const shiftH=shiftDurationHours(shiftStart?.time,shiftEnd?.time);
-    const pause=shiftH==null ? null : pauseHours(shiftH);
-    const actual=shiftH==null ? null : Math.max(0,shiftH-pause);
+    const travelH=shiftDurationHours(departure?.time,dayEnd?.time);
+    const plannedH=shiftDurationHours(shiftStart?.time,shiftEnd?.time);
+    const pause=plannedH==null ? null : pauseHours(plannedH);
+
+    // P/Q:
+    // P entspricht der bestellten/geplanten Schichtzeit.
+    // Q bleibt leer und wird nicht automatisch berechnet.
+    const actualPaidHours=plannedH;
 
     const vonWohnort=departure?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
     const zurBaustelle=arrival?.ort || '';
     const role=ev.find(x=>x.role)?.role || '';
+
+    // Auftraggeber muss aus der Schicht stammen; niemals aus C ableiten.
+    const client =
+      ev.find(x=>x.client)?.client ||
+      ev.find(x=>x.auftraggeber)?.auftraggeber ||
+      ev.find(x=>x.type==='Auftraggeber')?.detail || '';
 
     byDate[date]={
       date,
@@ -458,11 +473,11 @@ function buildExcelRows(){
       firmenKm:dayKm,
       uebernachtung:'',
       eingesetztAls:role,
-      auftraggeberBaustelle:'',
+      auftraggeberBaustelle:client,
       arbeitszeitVon:shiftStart?.time||'',
       arbeitszeitBis:shiftEnd?.time||'',
       pause,
-      actual,
+      actual:actualPaidHours,
       bereitschaft:''
     };
   });
@@ -487,7 +502,6 @@ function buildExcelPreview(){
   excelRows=buildExcelRows();
   const headers=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
   const table=document.getElementById('excelPreview');
-
   table.innerHTML='<thead><tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+
     excelRows.map((r,i)=>`<tr>
       <td>${i+1}</td><td>${esc(r.vonWohnort)}</td><td>${esc(r.zurBaustelle)}</td>
@@ -496,7 +510,7 @@ function buildExcelPreview(){
       <td></td>
       <td>${r.firmenKm===''?'':Number(r.firmenKm).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
       <td></td><td></td><td>${esc(r.uebernachtung)}</td>
-      <td>${esc(r.eingesetztAls)}</td><td></td>
+      <td>${esc(r.eingesetztAls)}</td><td>${esc(r.auftraggeberBaustelle)}</td>
       <td>${esc(r.arbeitszeitVon)}</td><td>${esc(r.arbeitszeitBis)}</td>
       <td>${r.pause===''?'':Number(r.pause).toLocaleString('de-DE')}</td>
       <td>${r.actual===''?'':Number(r.actual).toLocaleString('de-DE',{maximumFractionDigits:2})}</td>
@@ -506,9 +520,9 @@ function buildExcelPreview(){
   const filled=excelRows.filter(r=>r.date).length;
   document.getElementById('excelMessage').innerHTML=
     `<span class="ok">✓ ${filled} vorhandene Tage auf 31 Tageszeilen verteilt.</span> `+
-    `Reisezeit (D/E) und Schichtzeit (M/N/P) werden jetzt strikt getrennt.`;
+    `M/N/P verwenden die bestellte Schichtzeit; D/E bleiben reine Reisezeit.`;
   document.getElementById('excelWarnings').innerHTML=
-    '<span class="ok">✓ M/N = Schichtbeginn/-ende. D = Abfahrt/Tagesabschluss. P = Schichtdauer minus Pause.</span>';
+    '<span class="ok">✓ Auftraggeber wird nur aus einem ausdrücklich in der Schicht hinterlegten Auftraggeber übernommen. Q bleibt leer.</span>';
 }
 
 function downloadExcel(){
@@ -525,8 +539,8 @@ function downloadExcel(){
   const ws=XLSX.utils.aoa_to_sheet(data);
   ws['!cols']=headers.map((h,i)=>({wch:i===6?34:22}));
   XLSX.utils.book_append_sheet(wb,ws,'Testlabor');
-  XLSX.writeFile(wb,'Meine-Schicht-Testlabor-Excel-v5.xlsx');
-  document.getElementById('excelMessage').innerHTML += ' <span class="ok">✓ Test-Excel v5 erstellt.</span>';
+  XLSX.writeFile(wb,'Meine-Schicht-Testlabor-Excel-v6.xlsx');
+  document.getElementById('excelMessage').innerHTML += ' <span class="ok">✓ Test-Excel v6 erstellt.</span>';
 }
 
 function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
