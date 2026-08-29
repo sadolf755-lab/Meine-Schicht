@@ -1,0 +1,247 @@
+[
+  {
+    "kind": "plan",
+    "id": 1001,
+    "date": "01.06.2024",
+    "time": "22:00-06:30",
+    "role": "BüP",
+    "ort": "Fellheim",
+    "auftraggeber": "FWD"
+  },
+  {
+    "kind": "event",
+    "id": 1002,
+    "date": "01.06.2024",
+    "time": "21:35:00",
+    "role": "BüP",
+    "type": "Abfahrt",
+    "detail": "Start: Augsburg",
+    "start": "Augsburg",
+    "kmStart": "100000"
+  },
+  {
+    "kind": "event",
+    "id": 1003,
+    "date": "01.06.2024",
+    "time": "22:00:00",
+    "role": "BüP",
+    "type": "Schichtbeginn",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1004,
+    "date": "02.06.2024",
+    "time": "06:30:00",
+    "role": "BüP",
+    "type": "Schichtende",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1005,
+    "date": "02.06.2024",
+    "time": "06:40:00",
+    "role": "BüP",
+    "type": "Ankunft / Tagesabschluss",
+    "detail": "Ziel: Augsburg",
+    "zielart": "Augsburg",
+    "kmEnd": "100229"
+  },
+  {
+    "kind": "plan",
+    "id": 1010,
+    "date": "10.06.2024",
+    "time": "06:00-14:30",
+    "role": "BüP",
+    "ort": "Fellheim",
+    "auftraggeber": "FWD"
+  },
+  {
+    "kind": "event",
+    "id": 1011,
+    "date": "10.06.2024",
+    "time": "05:35:00",
+    "role": "BüP",
+    "type": "Abfahrt",
+    "detail": "Start: Augsburg",
+    "start": "Augsburg",
+    "kmStart": "100229"
+  },
+  {
+    "kind": "event",
+    "id": 1012,
+    "date": "10.06.2024",
+    "time": "06:00:00",
+    "role": "BüP",
+    "type": "Schichtbeginn",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1013,
+    "date": "10.06.2024",
+    "time": "14:30:00",
+    "role": "BüP",
+    "type": "Schichtende",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1014,
+    "date": "10.06.2024",
+    "time": "14:40:00",
+    "role": "BüP",
+    "type": "Ankunft / Tagesabschluss",
+    "detail": "Ziel: Augsburg",
+    "zielart": "Augsburg",
+    "kmEnd": "100441"
+  },
+  {
+    "kind": "plan",
+    "id": 1020,
+    "date": "14.06.2024",
+    "time": "14:00-22:30",
+    "role": "BüP",
+    "ort": "Fellheim",
+    "auftraggeber": "FWD"
+  },
+  {
+    "kind": "event",
+    "id": 1021,
+    "date": "14.06.2024",
+    "time": "13:35:00",
+    "role": "BüP",
+    "type": "Abfahrt",
+    "detail": "Start: Augsburg",
+    "start": "Augsburg",
+    "kmStart": "100441"
+  },
+  {
+    "kind": "event",
+    "id": 1022,
+    "date": "14.06.2024",
+    "time": "14:00:00",
+    "role": "BüP",
+    "type": "Schichtbeginn",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1023,
+    "date": "14.06.2024",
+    "time": "22:30:00",
+    "role": "BüP",
+    "type": "Schichtende",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1024,
+    "date": "14.06.2024",
+    "time": "22:40:00",
+    "role": "BüP",
+    "type": "Ankunft / Tagesabschluss",
+    "detail": "Ziel: Augsburg",
+    "zielart": "Augsburg",
+    "kmEnd": "100611"
+  },
+  {
+    "kind": "plan",
+    "id": 1030,
+    "date": "20.06.2024",
+    "time": "11:00-19:30",
+    "role": "BüP",
+    "ort": "Denklingen",
+    "auftraggeber": "FWD"
+  },
+  {
+    "kind": "event",
+    "id": 1031,
+    "date": "20.06.2024",
+    "time": "10:35:00",
+    "role": "BüP",
+    "type": "Abfahrt",
+    "detail": "Start: Augsburg",
+    "start": "Augsburg",
+    "kmStart": "100611"
+  },
+  {
+    "kind": "event",
+    "id": 1032,
+    "date": "20.06.2024",
+    "time": "11:00:00",
+    "role": "BüP",
+    "type": "Schichtbeginn",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1033,
+    "date": "20.06.2024",
+    "time": "19:30:00",
+    "role": "BüP",
+    "type": "Schichtende",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1034,
+    "date": "20.06.2024",
+    "time": "19:40:00",
+    "role": "BüP",
+    "type": "Ankunft / Tagesabschluss",
+    "detail": "Ziel: Augsburg",
+    "zielart": "Augsburg",
+    "kmEnd": "100780"
+  },
+  {
+    "kind": "plan",
+    "id": 1040,
+    "date": "26.06.2024",
+    "time": "18:00-06:00",
+    "role": "SAKRA",
+    "ort": "Memmingen",
+    "auftraggeber": ""
+  },
+  {
+    "kind": "event",
+    "id": 1041,
+    "date": "26.06.2024",
+    "time": "17:35:00",
+    "role": "SAKRA",
+    "type": "Abfahrt",
+    "detail": "Start: Augsburg",
+    "start": "Augsburg",
+    "kmStart": "100780"
+  },
+  {
+    "kind": "event",
+    "id": 1042,
+    "date": "26.06.2024",
+    "time": "18:00:00",
+    "role": "SAKRA",
+    "type": "Schichtbeginn",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1043,
+    "date": "27.06.2024",
+    "time": "06:00:00",
+    "role": "SAKRA",
+    "type": "Schichtende",
+    "detail": ""
+  },
+  {
+    "kind": "event",
+    "id": 1044,
+    "date": "27.06.2024",
+    "time": "06:10:00",
+    "role": "SAKRA",
+    "type": "Ankunft / Tagesabschluss",
+    "detail": "Ziel: Augsburg",
+    "zielart": "Augsburg",
+    "kmEnd": "100983"
+  }
+]

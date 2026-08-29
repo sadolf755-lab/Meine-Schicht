@@ -214,33 +214,18 @@ function parseLine(line){
 }
 
 function parseText(text){
-  const result=[];
-  for(const raw of text.split(/\r?\n/)){
-    const line=raw.trim();
-    if(!line)continue;
+  const raw=text.trim();
 
-    // Geplante Schicht aus Meine Schicht:
-    // PLAN|DD.MM.YYYY|HH:MM-HH:MM|Rolle|Einsatzort|Auftraggeber
-    if(/^PLAN\|/i.test(line)){
-      const p=line.split('|').map(x=>x.trim());
-      if(p.length>=3 && /^\d{2}\.\d{2}\.\d{4}$/.test(p[1]) && /^\d{2}:\d{2}-\d{2}:\d{2}$/.test(p[2])){
-        result.push({
-          id:Date.now()+Math.random(),
-          kind:'plan',
-          date:p[1],
-          time:p[2],
-          role:p[3]||'',
-          ort:p[4]||'',
-          auftraggeber:p[5]||''
-        });
-        continue;
-      }
-    }
+  // 1) Echter Meine-Schicht-Datenimport: JSON-Array oder einzelne JSON-Objekte.
+  try{
+    const parsedJson=JSON.parse(raw);
+    const arr=Array.isArray(parsedJson)?parsedJson:[parsedJson];
+    const valid=arr.filter(x=>x && (x.kind==='plan'||x.kind==='event') && x.date && x.time);
+    if(valid.length) return valid.map(x=>({...x,id:x.id||Date.now()+Math.random()}));
+  }catch(e){}
 
-    const e=parseLine(line);
-    if(e)result.push(e);
-  }
-  return result;
+  // 2) Fallback für den bisherigen lesbaren Testtext.
+  return text.split(/\r?\n/).map(parseLine).filter(Boolean);
 }
 
 function simulate(){
