@@ -106,7 +106,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
 function save(d){localStorage.setItem(KEY,JSON.stringify(d))}
 function km(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null}
-function dateKey(s){const m=s.match(/^(\d{2})\\.(\d{2})\\.(\d{4})$/);return m?m[3]+m[2]+m[1]:s}
+function dateKey(s){const m=s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);return m?m[3]+m[2]+m[1]:s}
 
 const knownEvents=[
  'Abfahrt','Angekommen','Schichtbeginn','Schichtende','Ankunft / Tagesabschluss',
@@ -122,7 +122,7 @@ function parseLine(line){
   if(!line || /^Gefahrene Kilometer am Tag:/i.test(line)) return null;
 
   // Falls PDF-Text Zeilen mit zusätzlichen Leerzeichen enthält.
-  const m=line.match(/^(\d{2}\\.\d{2}\\.\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.*)$/);
+  const m=line.match(/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)\s+(.*)$/);
   if(!m)return null;
 
   const date=m[1],time=m[2],rest=m[3].trim();
