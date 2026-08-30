@@ -648,6 +648,21 @@ function forceXlsxRecalculation(xml){
   return xml.replace(/<workbook([^>]*)>/i,'<workbook$1><calcPr '+calcAttrs+'/>');
 }
 
+function setFormulaCachedValue(xml, ref, value){
+  const re=new RegExp('(<c\\b[^>]*\\br="'+ref+'"[^>]*>[\\s\\S]*?<f\\b[^>]*>[\\s\\S]*?</f>)[\\s\\S]*?(<v>)[\\s\\S]*?(</v>)(\\s*</c>)','i');
+  if(!re.test(xml)) return xml;
+  return xml.replace(re,'$1$2'+(Number.isFinite(Number(value))?Number(value):0)+'$3$4');
+}
+
+function sumRows(rows, colIndex, startDay, endDay){
+  return Number(rows
+    .filter(r=>Number(r[0])>=startDay && Number(r[0])<=endDay)
+    .reduce((sum,r)=>{
+      const n=Number(r[colIndex]);
+      return sum+(Number.isFinite(n)?n:0);
+    },0).toFixed(2));
+}
+
 async function exportMonthlyReport(){
   const msg=document.getElementById('reportMessage');
   try{
@@ -693,6 +708,28 @@ async function exportMonthlyReport(){
         xml=setXlsxCell(xml,String.fromCharCode(65+c)+r,values[c]);
       }
     }
+
+    // Die Originalvorlage enthält die Summenformeln bereits. Wir lassen die
+    // Formeln unverändert, aktualisieren aber ihre gespeicherten Ergebnisse,
+    // damit die exportierte Datei auch ohne sofortige Neuberechnung die
+    // korrekten Summen anzeigt.
+    //
+    // Zeile 24 = Zwischensumme Tage 1–15
+    // Zeile 45 = Monatssumme über die zweite Hälfte inkl. Übertrag.
+    const sumCols=[
+      ['E',4], ['G',6], ['H',7], ['I',8], ['P',15]
+    ];
+    for(const [col,idx] of sumCols){
+      xml=setFormulaCachedValue(xml,col+'24',sumRows(rows,idx,1,15));
+      xml=setFormulaCachedValue(xml,col+'45',sumRows(rows,idx,1,31));
+    }
+
+    // Q ist in der Originalvorlage eine abgeleitete Formel aus G/H.
+    // Ihren Formelinhalt lassen wir unverändert; auch hier setzen wir nur
+    // den sichtbaren Zwischenspeicher auf den aktuellen Wert.
+    const gTotal=sumRows(rows,6,1,31);
+    const hTotal=sumRows(rows,7,1,31);
+    xml=setFormulaCachedValue(xml,'Q45',gTotal+hTotal);
 
     zip.file('xl/worksheets/sheet1.xml',xml);
 
