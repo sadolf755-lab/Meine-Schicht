@@ -520,15 +520,17 @@ function monthlyRows(){
     const actual=planned && pause!==null
       ? Number(Math.max(0,reportDuration(planned.start,planned.end)-pause).toFixed(2)) : '';
 
+    // Auftraggeber und Baustelle sind zwei getrennte Felder:
+    // L = ausschließlich Auftraggeber, C = Baustelle/Einsatzort.
+    // Der Ort darf NICHT noch einmal beim Auftraggeber stehen.
     const customer=src.auftraggeber || '';
-    const auftragBaustelle=customer ? (baustelle ? customer+' / '+baustelle : customer) : baustelle;
 
     rows[day-1]=[
       day, wohnort, baustelle, reisezeit, ausserHaus,
       src.plate||src.kennzeichen||'', kmDay, '',
       src.privateKm||'', src.overnight?'1':'',
       src.role||ev.find(x=>x.role)?.role||'',
-      auftragBaustelle, planned?.start||'', planned?.end||'',
+      customer, planned?.start||'', planned?.end||'',
       pause==null?'':pause, actual, ''
     ];
   }
@@ -545,7 +547,7 @@ function previewMonthlyReport(){
 
   const rows=monthlyRows();
   document.getElementById('reportPreview').innerHTML='<thead><tr>'+reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v==null?'':v)+'</td>').join('')+'</tr>').join('')+'</tbody>';
-  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ Originalstruktur A–Q: 17 Spalten und 31 Tageszeilen. P = bestellte Schichtzeit minus Pause; Q bleibt leer.</span>';
+  document.getElementById('reportMessage').innerHTML='<span class="ok">✓ Originalstruktur A–Q: 17 Spalten und 31 Tageszeilen. L = ausschließlich Auftraggeber (ohne Baustellenort); C = Baustelle/Einsatzort. P = bestellte Schichtzeit minus Pause; Q bleibt leer.</span>';
 }
 
 function styleTemplateSheet(ws){
