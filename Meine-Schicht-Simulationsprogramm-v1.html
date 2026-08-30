@@ -481,7 +481,11 @@ function monthlyRows(){
     const wohnort=src.start || dep?.start ||
       dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
     const baustelle=src.ort || arr?.ort || '';
-    const reisezeit=dep && end ? `${dep.time||''}–${end.time||''}` : '';
+    const fmtTime=t=>{
+      const m=String(t||'').match(/^(\d{1,2}:\d{2})(?::\d{2})?$/);
+      return m ? m[1] : String(t||'');
+    };
+    const reisezeit=dep && end ? `${fmtTime(dep.time)}–${fmtTime(end.time)}` : '';
 
     let kmDay='';
     if(dep?.kmStart && end?.kmEnd){
@@ -612,6 +616,15 @@ function setXlsxCell(xml, ref, value){
   return xml.slice(0,rr.index)+insert+xml.slice(rr.index+rr[0].length);
 }
 
+function forceXlsxRecalculation(xml){
+  const calcPrRe=/<calcPr\b[^>]*\/>/i;
+  const calcAttrs='calcId="191029" calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"';
+  if(calcPrRe.test(xml)){
+    return xml.replace(calcPrRe,'<calcPr '+calcAttrs+'/>');
+  }
+  return xml.replace(/<workbook([^>]*)>/i,'<workbook$1><calcPr '+calcAttrs+'/>');
+}
+
 async function exportMonthlyReport(){
   const msg=document.getElementById('reportMessage');
   try{
@@ -660,6 +673,14 @@ async function exportMonthlyReport(){
 
     zip.file('xl/worksheets/sheet1.xml',xml);
 
+    // Die Originalvorlage enthält bereits die Summenformeln. Sie werden nicht
+    // überschrieben. Excel soll sie beim Öffnen zwingend neu berechnen.
+    const workbookFile=zip.file('xl/workbook.xml');
+    if(workbookFile){
+      const workbookXml=await workbookFile.async('string');
+      zip.file('xl/workbook.xml',forceXlsxRecalculation(workbookXml));
+    }
+
     const blob=await zip.generateAsync({
       type:'blob',
       mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -675,7 +696,7 @@ async function exportMonthlyReport(){
     a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
 
-    msg.innerHTML='<span class="ok">✓ Originalvorlage von GitHub geladen, befüllt und als Excel heruntergeladen.</span>';
+    msg.innerHTML='<span class="ok">✓ Originalvorlage geladen und befüllt. Vorhandene Summenformeln bleiben erhalten und werden beim Öffnen neu berechnet.</span>';
   }catch(err){
     console.error(err);
     msg.innerHTML='<span class="warn">⚠️ '+esc(err.message)+'</span>';
