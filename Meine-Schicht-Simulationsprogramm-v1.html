@@ -487,6 +487,19 @@ function monthlyRows(){
     };
     const reisezeit=dep && end ? `${fmtTime(dep.time)}–${fmtTime(end.time)}` : '';
 
+    // E = gesamte Zeit außer Haus als Dezimalstunden.
+    // Sie läuft von der Abfahrt am Wohnort bis zur Ankunft am Wohnort.
+    let ausserHaus='';
+    if(dep && end){
+      const depDateTime=parseDateTime(dep.date,dep.time);
+      const endDateTime=parseDateTime(end.date,end.time);
+      if(depDateTime && endDateTime){
+        let hours=(endDateTime-depDateTime)/3600000;
+        if(hours<0) hours+=24;
+        ausserHaus=Number(hours.toFixed(2));
+      }
+    }
+
     let kmDay='';
     if(dep?.kmStart && end?.kmEnd){
       const a=km(dep.kmStart), b=km(end.kmEnd);
@@ -501,7 +514,7 @@ function monthlyRows(){
     const auftragBaustelle=customer ? (baustelle ? customer+' / '+baustelle : customer) : baustelle;
 
     rows[day-1]=[
-      day, wohnort, baustelle, reisezeit, kmDay,
+      day, wohnort, baustelle, reisezeit, ausserHaus,
       src.plate||src.kennzeichen||'', kmDay, '',
       src.privateKm||'', src.overnight?'1':'',
       src.role||ev.find(x=>x.role)?.role||'',
