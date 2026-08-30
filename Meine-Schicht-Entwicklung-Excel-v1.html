@@ -1180,7 +1180,7 @@ function exportPDF(){
  w.document.write(`<html><head><meta charset="utf-8"><title>Meine Schicht</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
 <div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
 <div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
-<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button>
 </body></html>`);w.document.close()}
 function clearData(){
  if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
