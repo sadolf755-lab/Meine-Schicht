@@ -82,38 +82,130 @@ function datesInData(){
     .sort((a,b)=>parseDateTime(a,'00:00:00')-parseDateTime(b,'00:00:00'));
 }
 
-function buildReportRows(){
-  const dates=datesInData(), out=[];
-  for(const date of dates){
-    const ev=eventsForDate(date);
-    if(!ev.length)continue;
-    const dep=ev.find(x=>x.type==='Abfahrt');
-    const arrs=ev.filter(x=>x.type==='Ankunft / Tagesabschluss');
-    const arr=arrs.length?arrs[arrs.length-1]:null;
-    const start=ev.find(x=>x.type==='Schichtbeginn');
-    const end=ev.find(x=>x.type==='Schichtende');
-    const role=start?.role||ev.find(x=>x.role)?.role||'';
-    const plan=ev.find(x=>x.ort)||{};
-    const startTime=dep?.time||start?.time||'';
-    const endTime=arr?.time||end?.time||'';
-    const outside=(dep&&arr)?decHours(minutesBetween(dep,arr)):0;
-    const work=(start&&end)?decHours(minutesBetween(start,end)):0;
-    const kmStart=dep?Number(dep.kmStart):NaN;
-    const kmEnd=arr?Number(arr.kmEnd):NaN;
-    const km=(Number.isFinite(kmStart)&&Number.isFinite(kmEnd)&&kmEnd>=kmStart)?kmEnd-kmStart:0;
-    out.push({
-      date, day:Number(date.slice(0,2)), role,
-      wohnort:dep?.start||'',
-      baustelle:arr?.ort||ev.find(x=>x.type==='Angekommen')?.ort||'',
-      reisezeit:(startTime&&endTime)?`${startTime.slice(0,5)}–${endTime.slice(0,5)}`:'',
-      ausserHaus:outside, plate:'',
-      kmDay:km, privateKm:ev.filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
-        .reduce((s,x)=>s+(Number(x.privateKm)||0),0),
-      arbeitszeit:work,
-      events:ev
-    });
+function kmNumber(v){
+  const n=parseFloat(String(v??'').replace(',','.'));
+  return Number.isFinite(n)?n:null;
+}
+function durationHours(a,b){
+  if(!a||!b)return null;
+  const x=String(a).slice(0,8).split(':').map(Number);
+  const y=String(b).slice(0,8).split(':').map(Number);
+  if(x.length<2||y.length<2||x.some(Number.isNaN)||y.some(Number.isNaN))return null;
+  let mins=(y[0]*60+y[1])-(x[0]*60+x[1]);
+  if(mins<0)mins+=1440;
+  return mins/60;
+}
+function pauseForHours(h){
+  if(h==null)return '';
+  return h<=9?0.5:(h<=10?0.75:1);
+}
+function groupEvents(){
+  const g={};
+  for(const x of get().filter(x=>x.kind==='event')){
+    (g[x.date]??=[]).push(x);
   }
-  return out;
+  for(const d of Object.keys(g)) g[d].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  return g;
+}
+function dailyKmForDate(date,g){
+  const ev=g[date]||[];
+  let total=0,lastStart=null;
+  for(const x of ev){
+    if(x.type==='Abfahrt'){
+      const k=kmNumber(x.kmStart);
+      if(k!==null) lastStart=k;
+    }
+    if((x.type==='Ankunft / Tagesabschluss'||x.type==='Angekommen') && x.kmEnd){
+      const end=kmNumber(x.kmEnd);
+      if(lastStart!==null && end!==null && end>=lastStart){
+        total+=end-lastStart;
+        lastStart=null;
+      }
+    }
+  }
+  return total;
+}
+function plannedForDate(date,g){
+  const all=get();
+  const plans=all.filter(x=>x.kind==='plan' && x.date===date);
+  const role=(g[date]||[]).find(x=>x.role)?.role||'';
+  return plans.find(x=>x.role===role)||plans[0]||null;
+}
+function buildReportRows(){
+  const g=groupEvents();
+  const rows=[];
+  let realDayCount=0;
+
+  for(let day=1;day<=31;day++){
+    const date=Object.keys(g).find(d=>Number(String(d).slice(0,2))===day);
+    const ev=date?(g[date]||[]):[];
+    if(ev.length) realDayCount++;
+
+    const dep=ev.find(x=>x.type==='Abfahrt');
+    const arrival=ev.find(x=>x.type==='Angekommen');
+    const dayEnd=ev.filter(x=>x.type==='Ankunft / Tagesabschluss').slice(-1)[0] || null;
+    const shiftStart=ev.find(x=>x.type==='Schichtbeginn');
+    const shiftEnd=ev.find(x=>x.type==='Schichtende');
+    const plan=plannedForDate(date,g);
+
+    const wohnort=dep?.start||'';
+    const baustelle=plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'';
+    const reiseVon=dep?.time||'';
+    const reiseBis=(dayEnd?.time||arrival?.time||'');
+    const reisezeit=reiseVon&&reiseBis
+      ? String(reiseVon).slice(0,5)+'–'+String(reiseBis).slice(0,5)
+      : '';
+    const ausserHaus=durationHours(reiseVon,reiseBis);
+    const kmDay=date?dailyKmForDate(date,g):0;
+
+    let arbeitsVon=shiftStart?.time||'';
+    let arbeitsBis=shiftEnd?.time||'';
+    if(!arbeitsVon && plan?.time){
+      const m=String(plan.time).match(/^(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})$/);
+      if(m){arbeitsVon=m[1].padStart(2,'0')+':'+m[2];arbeitsBis=m[3].padStart(2,'0')+':'+m[4];}
+    }
+
+    const arbeitszeit=durationHours(arbeitsVon,arbeitsBis);
+    const pause=pauseForHours(arbeitszeit);
+
+    const privateKm=ev
+      .filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
+      .reduce((s,x)=>s+(kmNumber(x.privateKm)||0),0);
+
+    const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
+    const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
+    const auftragBaustelle=auftrag
+      ? (baustelle ? auftrag+' / '+baustelle : auftrag)
+      : baustelle;
+
+    if(!ev.length){
+      rows.push([day,'','','','','','','', '', '', '', '', '', '', '', '', '']);
+      continue;
+    }
+
+    rows.push([
+      day,                         // A Tag
+      wohnort,                     // B von Wohnort
+      baustelle,                   // C zur Baustelle
+      reisezeit,                   // D Reisezeit von–bis
+      ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
+      plan?.plate||plan?.kennzeichen||'',                // F
+      kmDay||0,                    // G Tages-km
+      '',                          // H Privat-Kfz
+      privateKm||'',               // I private km mit Firmen-Kfz
+      '',                          // J Übernachtung
+      ev.find(x=>x.role)?.role||plan?.role||'',           // K
+      auftragBaustelle,            // L
+      arbeitsVon?String(arbeitsVon).slice(0,5):'',       // M
+      arbeitsBis?String(arbeitsBis).slice(0,5):'',       // N
+      pause,                        // O
+      actual===''?'':Number(actual.toFixed(2)),          // P
+      ''                            // Q
+    ]);
+  }
+
+  buildReportRows._realDayCount=realDayCount;
+  return rows;
 }
 
 function showRows(){
@@ -133,7 +225,7 @@ function showRows(){
     <span>🚗 ${r.kmDay.toLocaleString('de-DE')} km · Arbeitszeit: ${r.arbeitszeit.toLocaleString('de-DE')} Std.</span>
   </div>`).join('');
 }
-function backToApp(){location.href='./index.html'}
+function backToApp(){window.location.assign('https://sadolf755-lab.github.io/Meine-Schicht/index.html')}
 
 function setFormulaCachedValue(xml, ref, value){
   const re=new RegExp('(<c\\b[^>]*\\br="'+ref+'"[^>]*>[\\s\\S]*?<f\\b[^>]*>[\\s\\S]*?</f>)[\\s\\S]*?(<v>)[\\s\\S]*?(</v>)(\\s*</c>)','i');
@@ -150,16 +242,13 @@ function sumRows(rows, colIndex, startDay, endDay){
     },0).toFixed(2));
 }
 
-async 
-function exportMonthlyReport(){
+async function exportMonthlyReport(){
   const msg=document.getElementById('reportMessage');
   try{
     if(typeof JSZip==='undefined') throw new Error('JSZip wurde nicht geladen.');
 
-    const sources=load().filter(x=>x.kind==='plan'||x.kind==='simShift');
-    if(!sources.length) throw new Error('Keine simulierte Schicht erkannt.');
-
     const rows=buildReportRows();
+    if(!buildReportRows._realDayCount) throw new Error('Keine gespeicherten Tagesdaten aus Meine Schicht gefunden.');
 
     // Die Originalvorlage liegt separat neben dieser HTML-Datei auf GitHub Pages.
     // Kein Base64, kein eingebettetes Duplikat.
