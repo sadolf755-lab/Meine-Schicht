@@ -44,6 +44,7 @@ button.back{background:#0a1928}
   <button class="primary" onclick="showRows()">📊 Excel-Ansicht aktualisieren</button>
   <button class="green" onclick="exportMonthlyReport()">⬇️ Excel herunterladen</button>
   <button class="back" onclick="backToApp()">↩️ Zurück zu Meine Schicht</button>
+  <div id="reportMessage" class="muted" style="margin-top:10px"></div>
   <div class="muted" style="margin-top:10px">Die App liest nur die bereits gespeicherten Tagesdaten. Es werden keine Schichten simuliert oder verändert.</div>
 </div>
 </div>
@@ -211,21 +212,94 @@ function buildReportRows(){
 function showRows(){
   const rows=buildReportRows();
   const box=document.getElementById('rows');
-  if(!rows.length){
+  const realDayCount=buildReportRows._realDayCount||0;
+
+  if(!realDayCount){
     box.innerHTML='<div class="empty">Noch keine gespeicherten Tagesdaten vorhanden.</div>';
     document.getElementById('count').textContent='0';
     return;
   }
-  document.getElementById('count').textContent=rows.length;
-  box.innerHTML=rows.map(r=>`<div class="rowitem">
-    <b>${esc(r.date)}</b>
-    <span>${esc(r.role||'–')}</span>
-    <span>${esc(r.wohnort||'–')} → ${esc(r.baustelle||'–')}</span>
-    <span>🕒 ${esc(r.reisezeit||'–')} · außer Haus: ${r.ausserHaus.toLocaleString('de-DE')} Std.</span>
-    <span>🚗 ${r.kmDay.toLocaleString('de-DE')} km · Arbeitszeit: ${r.arbeitszeit.toLocaleString('de-DE')} Std.</span>
+
+  document.getElementById('count').textContent=realDayCount;
+
+  const visibleRows=rows.filter(r=>{
+    // Nur tatsächlich gespeicherte Tage anzeigen; leere Platzhalter aus
+    // der 31-Tage-Excelstruktur bleiben in der Vorschau unsichtbar.
+    return r.slice(1).some(v=>v!=='' && v!==null && v!==undefined);
+  });
+
+  box.innerHTML=visibleRows.map(r=>`<div class="rowitem">
+    <b>Tag ${esc(r[0])}</b>
+    <span>${esc(r[10]||'–')}</span>
+    <span>${esc(r[1]||'–')} → ${esc(r[2]||'–')}</span>
+    <span>🕒 ${esc(r[3]||'–')} · außer Haus: ${r[4]!=='' ? Number(r[4]).toLocaleString('de-DE')+' Std.' : '–'}</span>
+    <span>🚗 ${Number(r[6]||0).toLocaleString('de-DE')} km · Arbeitszeit: ${r[15]!=='' ? Number(r[15]).toLocaleString('de-DE')+' Std.' : '–'}</span>
   </div>`).join('');
 }
 function backToApp(){window.location.assign('https://sadolf755-lab.github.io/Meine-Schicht/index.html')}
+
+function xmlEscape(v){
+  return String(v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&apos;');
+}
+
+function setXlsxCell(xml, ref, value){
+  // Vorhandene XLSX-Zellen ersetzen. Falls eine leere Zelle in der Vorlage
+  // technisch nicht gespeichert ist, wird sie mit dem Zeilenstil angelegt.
+  const cellRe=new RegExp('<c\\b([^>]*\\br="'+ref+'"[^>]*?)(?:>([\\s\\S]*?)</c>|\\s*/>)','i');
+  const m=xml.match(cellRe);
+
+  let attrs='';
+  let replacement='';
+
+  if(m){
+    attrs=m[1].replace(/\s+t="[^"]*"/i,'').trim();
+  }else{
+    const rowNumber=ref.match(/\d+$/)?.[0];
+    if(!rowNumber) throw new Error('Ungültige Zelladresse '+ref);
+
+    const rowRe=new RegExp('(<row\\b[^>]*\\br="'+rowNumber+'"[^>]*>)([\\s\\S]*?)(</row>)','i');
+    const rr=xml.match(rowRe);
+    if(!rr) throw new Error('Zeile '+rowNumber+' wurde in der Originalvorlage nicht gefunden.');
+
+    const styleMatch=rr[2].match(/<c\\b[^>]*\\bs="([^"]+)"/i);
+    const style=styleMatch ? ' s="'+styleMatch[1]+'"' : '';
+    attrs='r="'+ref+'"'+style;
+  }
+
+  if(value===null || value===undefined || value===''){
+    replacement='<c '+attrs+' t="n"></c>';
+  }else if(typeof value==='number' && Number.isFinite(value)){
+    replacement='<c '+attrs+' t="n"><v>'+value+'</v></c>';
+  }else{
+    replacement='<c '+attrs+' t="inlineStr"><is><t xml:space="preserve">'+xmlEscape(value)+'</t></is></c>';
+  }
+
+  if(m){
+    return xml.slice(0,m.index)+replacement+xml.slice(m.index+m[0].length);
+  }
+
+  const rowNumber=ref.match(/\d+$/)[0];
+  const rowRe=new RegExp('(<row\\b[^>]*\\br="'+rowNumber+'"[^>]*>)([\\s\\S]*?)(</row>)','i');
+  const rr=xml.match(rowRe);
+  if(!rr) throw new Error('Zeile '+rowNumber+' wurde in der Originalvorlage nicht gefunden.');
+
+  const insert=rr[1]+rr[2]+replacement+rr[3];
+  return xml.slice(0,rr.index)+insert+xml.slice(rr.index+rr[0].length);
+}
+
+function forceXlsxRecalculation(xml){
+  const calcPrRe=/<calcPr\b[^>]*\/>/i;
+  const calcAttrs='calcId="191029" calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"';
+  if(calcPrRe.test(xml)){
+    return xml.replace(calcPrRe,'<calcPr '+calcAttrs+'/>');
+  }
+  return xml.replace(/<workbook([^>]*)>/i,'<workbook$1><calcPr '+calcAttrs+'/>' );
+}
 
 function setFormulaCachedValue(xml, ref, value){
   const re=new RegExp('(<c\\b[^>]*\\br="'+ref+'"[^>]*>[\\s\\S]*?<f\\b[^>]*>[\\s\\S]*?</f>)[\\s\\S]*?(<v>)[\\s\\S]*?(</v>)(\\s*</c>)','i');
@@ -336,7 +410,7 @@ async function exportMonthlyReport(){
     msg.innerHTML='<span class="ok">✓ Originalvorlage geladen und befüllt. Vorhandene Summenformeln bleiben erhalten und werden beim Öffnen neu berechnet.</span>';
   }catch(err){
     console.error(err);
-    msg.innerHTML='<span class="warn">⚠️ '+esc(err.message)+'</span>';
+    if(msg) msg.innerHTML='<span class="warn">⚠️ '+esc(err.message)+'</span>';
     alert('Excel-Erzeugung fehlgeschlagen: '+err.message);
   }
 }
