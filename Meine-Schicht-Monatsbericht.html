@@ -216,7 +216,7 @@ function showRows(){
     document.getElementById('count').textContent='0';
     return;
   }
-  document.getElementById('count').textContent=buildReportRows._realDayCount||0;
+  document.getElementById('count').textContent=rows.length;
   box.innerHTML=rows.map(r=>`<div class="rowitem">
     <b>${esc(r.date)}</b>
     <span>${esc(r.role||'–')}</span>
@@ -242,7 +242,7 @@ function sumRows(rows, colIndex, startDay, endDay){
     },0).toFixed(2));
 }
 
-async async function exportMonthlyReport(){
+async function exportMonthlyReport(){
   const msg=document.getElementById('reportMessage');
   try{
     if(typeof JSZip==='undefined') throw new Error('JSZip wurde nicht geladen.');
