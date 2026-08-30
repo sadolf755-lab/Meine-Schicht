@@ -455,6 +455,16 @@ function eventsForPlan(plan, all){
     .sort((a,b)=>(dateKey(a.date)+' '+a.time).localeCompare(dateKey(b.date)+' '+b.time));
   return candidates;
 }
+function parseDateTime(date,time){
+  const dm=String(date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  const tm=String(time||'').match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if(!dm || !tm) return null;
+  return new Date(
+    Number(dm[3]), Number(dm[2])-1, Number(dm[1]),
+    Number(tm[1]), Number(tm[2]), Number(tm[3]||0)
+  );
+}
+
 function monthlyRows(){
   const all=load();
   const sources=all.filter(x=>x.kind==='simShift'||x.kind==='plan')
