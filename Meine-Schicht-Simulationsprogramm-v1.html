@@ -414,84 +414,94 @@ function reportDuration(a,b){
 function reportPause(h){return h==null?null:(h<=9?.5:h<=10?.75:1)}
 const reportHeaders=['Tag','von Wohnort','zur Baustelle','Reisezeit von–bis','Reiseweg gesamt','Kfz-Kennzeichen','km Wohnort → Baustelle und zurück – Firmen-Kfz','Privat-Kfz','km privat mit Firmen-Kfz','Übernachtung','Eingesetzt als','Auftraggeber/Baustelle','Arbeitszeit von','Arbeitszeit bis','Pause','Tatsächliche Arbeitszeit','davon bezahlte Bereitschaft'];
 
+function dateObj(ddmmyyyy){
+  const m=String(ddmmyyyy||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  return m?new Date(Number(m[3]),Number(m[2])-1,Number(m[1])):null;
+}
+function dateStr(d){
+  return d ? String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear() : '';
+}
+function addDays(date, n){
+  const d=dateObj(date);
+  if(!d)return '';
+  d.setDate(d.getDate()+n);
+  return dateStr(d);
+}
+function planIsOvernight(time){
+  const p=parsePlannedShift(time||'');
+  if(!p)return false;
+  return reportDuration(p.start,p.end)>0 && p.end<p.start;
+}
+function eventsForPlan(plan, all){
+  const role=plan?.role||'';
+  const startDate=plan?.date||'';
+  const dates=planIsOvernight(plan?.time)?[startDate,addDays(startDate,1)]:[startDate];
+  const candidates=all.filter(x=>x.kind==='event' && dates.includes(x.date) && (!role || !x.role || x.role===role))
+    .sort((a,b)=>(dateKey(a.date)+' '+a.time).localeCompare(dateKey(b.date)+' '+b.time));
+  return candidates;
+}
 function monthlyRows(){
-  const g=group();
-  const dates=Object.keys(g).sort((a,b)=>dateKey(a).localeCompare(dateKey(b)));
-  const allData=load();
-  const plans=allData.filter(x=>x.kind==='plan');
-  const rows=[];
+  const all=load();
+  const plans=all.filter(x=>x.kind==='plan').sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
+  const rows=Array.from({length:31},(_,i)=>[i+1,'','','','','','','','','','','','','','','','']);
 
-  function plannedForDate(date){
-    if(!date)return null;
-    const same=plans.filter(p=>{
-      if(p.date===date)return true;
-      const m=(p.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      return !!m && (m[3]+'.'+m[2]+'.'+m[1])===date;
-    });
-    if(!same.length)return null;
-    const eventRole=(g[date]||[]).find(x=>x.role)?.role||'';
-    return same.find(p=>p.role===eventRole) || same[0];
-  }
+  for(const plan of plans){
+    const m=String(plan.date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if(!m)continue;
+    const day=Number(m[1]);
+    if(day<1||day>31)continue;
 
-  for(let day=1;day<=31;day++){
-    const date=dates.find(d=>Number(d.slice(0,2))===day);
-    const ev=date?g[date]:[];
-    const abfahrt=ev.find(x=>x.type==='Abfahrt');
-    const ankunft=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
-    const plan=plannedForDate(date);
-    const planned=parsePlannedShift(plan?.time||'');
+    const ev=eventsForPlan(plan,all);
+    const dep=ev.find(x=>x.type==='Abfahrt');
+    const arr=ev.find(x=>x.type==='Angekommen');
+    const end=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
+    const planned=parsePlannedShift(plan.time||'');
 
-    const wohnort=abfahrt?.start||'';
-    const baustelle=plan?.ort || ankunft?.zielart || ankunft?.ort || '';
-    const reisezeit=abfahrt&&ankunft ? (abfahrt.time||'')+'–'+(ankunft.time||'') : '';
-    const kmDay=monthlyDayKmForDate(date,dates,g);
+    // Wohnort und Baustelle kommen aus den dafür vorgesehenen App-Feldern.
+    const wohnort=dep?.start || dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
+    const baustelle=plan.ort || arr?.ort || '';
+    const reisezeit=dep && end ? `${dep.time||''}–${end.time||''}` : '';
 
-    const workHours=planned ? reportDuration(planned.start,planned.end) : null;
-    const pause=reportPause(workHours);
-    const actual=(workHours==null||pause==null)?'':Math.max(0,workHours-pause).toLocaleString('de-DE',{maximumFractionDigits:2});
+    let kmDay='';
+    if(dep?.kmStart && end?.kmEnd){
+      const a=km(dep.kmStart), b=km(end.kmEnd);
+      if(a!==null && b!==null && b>=a) kmDay=Number((b-a).toFixed(1));
+    }
 
-    const auftraggeber=plan?.auftraggeber||'';
-    const auftragBaustelle=auftraggeber
-      ? (baustelle ? auftraggeber+' / '+baustelle : auftraggeber)
-      : baustelle;
+    const pause=planned ? reportPause(reportDuration(planned.start,planned.end)) : null;
+    const actual=planned && pause!==null
+      ? Number(Math.max(0,reportDuration(planned.start,planned.end)-pause).toFixed(2))
+      : '';
 
-    rows.push([
+    const customer=plan.auftraggeber || '';
+    // In der Vorlage ist diese Spalte "Auftraggeber oder Baustelle".
+    const auftragBaustelle=customer ? (baustelle ? customer+' / '+baustelle : customer) : baustelle;
+
+    rows[day-1]=[
       day,
       wohnort,
       baustelle,
       reisezeit,
-      kmDay==null?'':kmDay,
-      plan?.plate||plan?.kennzeichen||'',
-      kmDay==null?'':kmDay,
+      kmDay,
+      plan.plate||plan.kennzeichen||'',
+      kmDay,
       '',
-      '',
-      plan?.overnight ? '1' : '',
-      plan?.role||ev.find(x=>x.role)?.role||'',
+      plan.privateKm||'',
+      plan.overnight?'1':'',
+      plan.role||ev.find(x=>x.role)?.role||'',
       auftragBaustelle,
       planned?.start||'',
       planned?.end||'',
-      pause==null?'':pause.toLocaleString('de-DE',{maximumFractionDigits:2}),
+      pause==null?'':pause,
       actual,
       ''
-    ]);
+    ];
   }
   return rows;
 }
-function monthlyDayKmForDate(date,dates,g){
-  if(!date)return null;
-  let lastKm=null;
-  for(const d of dates){
-    const ev=g[d];
-    const explicitStart=ev.find(e=>e.type==='Abfahrt'&&e.kmStart);
-    const explicitEnd=[...ev].reverse().find(e=>e.type==='Ankunft / Tagesabschluss'&&e.kmEnd);
-    if(d===date) return dailyKm(ev,explicitStart?null:lastKm);
-    if(explicitEnd){const n=km(explicitEnd.kmEnd);if(n!==null)lastKm=n;}
-    else if(explicitStart){const n=km(explicitStart.kmStart);if(n!==null)lastKm=n;}
-  }
-  return null;
-}
 
 function previewMonthlyReport(){
+
   const rows=monthlyRows();
   document.getElementById('reportPreview').innerHTML='<thead><tr>'+reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v==null?'':v)+'</td>').join('')+'</tr>').join('')+'</tbody>';
   document.getElementById('reportMessage').innerHTML='<span class="ok">✓ Originalstruktur A–Q: 17 Spalten und 31 Tageszeilen. P = bestellte Schichtzeit minus Pause; Q bleibt leer.</span>';
@@ -534,31 +544,48 @@ function styleTemplateSheet(ws){
   ws['!rows']=[{hpt:32},...Array.from({length:31},()=>({hpt:22}))];
 }
 
-function exportMonthlyReport(){
-  if(typeof XLSX==='undefined'){alert('Excel-Bibliothek nicht geladen.');return}
+async function exportMonthlyReport(){
+  const msg=document.getElementById('reportMessage');
+  try{
+    if(typeof XLSX==='undefined') throw new Error('Excel-Bibliothek nicht geladen.');
+    const templateUrl='./Monatsbericht_Vorlage.xlsx';
+    const res=await fetch(templateUrl,{cache:'no-store'});
+    if(!res.ok) throw new Error('Originalvorlage nicht gefunden. Bitte Monatsbericht_Vorlage.xlsx ins gleiche GitHub-Verzeichnis legen.');
+    const buf=await res.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellFormula:true});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=monthlyRows();
 
-  const rows=monthlyRows();
-  const wb=XLSX.utils.book_new();
+    // Originalvorlage: Tag 1–15 in Zeilen 9–23, Tag 16–31 in Zeilen 29–44.
+    for(const values of rows){
+      const day=Number(values[0]);
+      const r=day<=15 ? 8+day : 13+day;
+      for(let c=0;c<17;c++){
+        const addr=XLSX.utils.encode_cell({r:r-1,c});
+        const v=values[c];
+        if(v!=='' && v!==null && v!==undefined){
+          ws[addr]={t:typeof v==='number'?'n':'s',v:v};
+        }else{
+          // Nur die Tagesfelder leeren, nicht Kopf, Übertrag, Summen oder Unterschrift.
+          delete ws[addr];
+        }
+      }
+    }
 
-  // Exakte Datenposition der Originalvorlage:
-  // Kopfzeilen 7/8, Tageszeilen 9–39, Spalten A–Q.
-  const ws=XLSX.utils.aoa_to_sheet([
-    reportHeaders,
-    ...rows
-  ]);
-
-  // Exportdaten werden in derselben A–Q-Reihenfolge erzeugt.
-  ws['!cols']=[
-    {wch:7},{wch:24},{wch:24},{wch:20},{wch:15},{wch:16},
-    {wch:34},{wch:14},{wch:22},{wch:14},{wch:18},{wch:26},
-    {wch:16},{wch:16},{wch:10},{wch:22},{wch:24}
-  ];
-
-  XLSX.utils.book_append_sheet(wb,ws,'Monatsbericht');
-  XLSX.writeFile(wb,'Meine-Schicht-Monatsbericht.xlsx');
-
-  document.getElementById('reportMessage').innerHTML=
-    '<span class="ok">✓ Daten A–Q erzeugt. Die endgültige App-Version schreibt diese Daten direkt in die Originalvorlage, ohne deren Kopf-, Summen- und Unterschriftsbereiche zu ersetzen.</span>';
+    const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='Meine-Schicht-Monatsbericht.xlsx';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    msg.innerHTML='<span class="ok">✓ Originalvorlage übernommen und nur die 31 Tageszeilen befüllt.</span>';
+  }catch(err){
+    console.error(err);
+    msg.innerHTML='<span class="warn">⚠️ '+esc(err.message)+'</span>';
+    alert('Excel-Erzeugung fehlgeschlagen: '+err.message);
+  }
 }
 function topPage(){window.scrollTo({top:0,behavior:'smooth'})}
 render();
