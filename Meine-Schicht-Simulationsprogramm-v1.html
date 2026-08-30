@@ -568,23 +568,48 @@ function xmlEscape(v){
 }
 
 function setXlsxCell(xml, ref, value){
-  const re=new RegExp('<c\\s+([^>]*\\br="'+ref+'"[^>]*)>([\\s\\S]*?)</c>|<c\\s+([^>]*\\br="'+ref+'"[^>]*)\\s*/>','i');
-  const m=xml.match(re);
-  if(!m) throw new Error('Zelle '+ref+' wurde in der Originalvorlage nicht gefunden.');
+  // Robuster XML-Matcher: erkennt vorhandene Zellen unabhängig von
+  // Attribut-Reihenfolge und kann fehlende Zellen neu anlegen.
+  const cellRe=new RegExp('<c\\b([^>]*\\br="'+ref+'"[^>]*?)(?:>([\\s\\S]*?)</c>|\\s*/>)','i');
+  const m=xml.match(cellRe);
 
-  const attrs=(m[1]||m[3]||'')
-    .replace(/\s+t="[^"]*"/i,'')
-    .trim();
+  let attrs='';
+  let replacement='';
 
-  let cell;
-  if(value===null || value===undefined || value===''){
-    cell='<c '+attrs+' t="n"></c>';
-  }else if(typeof value==='number' && Number.isFinite(value)){
-    cell='<c '+attrs+' t="n"><v>'+value+'</v></c>';
+  if(m){
+    attrs=m[1].replace(/\s+t="[^"]*"/i,'').trim();
   }else{
-    cell='<c '+attrs+' t="inlineStr"><is><t xml:space="preserve">'+xmlEscape(value)+'</t></is></c>';
+    // Leere Zellen sind in XLSX technisch manchmal nicht gespeichert.
+    // Für eine fehlende Zelle übernehmen wir den Stil einer vorhandenen
+    // Zelle derselben Zeile, z.B. B9 für C9.
+    const rowMatch=ref.match(/^(.*?)(\d+)$/);
+    if(!rowMatch) throw new Error('Ungültige Zelladresse '+ref);
+    const row=rowMatch[2];
+    const rowRe=new RegExp('<c\\b([^>]*\\br="[^"]+'+row+'"[^>]*)(?:>|\\s*/>)','i');
+    const rm=xml.match(rowRe);
+    const style=rm ? ((rm[1].match(/\bs="[^"]+"/i)||[''])[0]) : '';
+    attrs='r="'+ref+'" '+style;
   }
-  return xml.slice(0,m.index)+cell+xml.slice(m.index+m[0].length);
+
+  if(value===null || value===undefined || value===''){
+    replacement='<c '+attrs+' t="n"></c>';
+  }else if(typeof value==='number' && Number.isFinite(value)){
+    replacement='<c '+attrs+' t="n"><v>'+value+'</v></c>';
+  }else{
+    replacement='<c '+attrs+' t="inlineStr"><is><t xml:space="preserve">'+xmlEscape(value)+'</t></is></c>';
+  }
+
+  if(m){
+    return xml.slice(0,m.index)+replacement+xml.slice(m.index+m[0].length);
+  }
+
+  // Zelle fehlt: in die passende <row r="..."> einfügen.
+  const rowNumber=ref.match(/\d+$/)[0];
+  const rowRe=new RegExp('(<row\\b[^>]*\\br="'+rowNumber+'"[^>]*>)([\\s\\S]*?)(</row>)','i');
+  const rr=xml.match(rowRe);
+  if(!rr) throw new Error('Zeile '+rowNumber+' wurde in der Originalvorlage nicht gefunden.');
+  const insert=rr[1]+rr[2]+replacement+rr[3];
+  return xml.slice(0,rr.index)+insert+xml.slice(rr.index+rr[0].length);
 }
 
 async function exportMonthlyReport(){
