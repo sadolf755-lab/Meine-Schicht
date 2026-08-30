@@ -205,29 +205,54 @@ function parseLine(line){
   const zielM=detail.match(/Ziel:\s*([^·]+)/i);
   if(zielM)zielart=zielM[1].trim();
 
+  // Exact Meine-Schicht fields: Abfahrt -> start, Ankunft -> zielart.
+  let start='';
+  const startM=detail.match(/Start:\s*([^·]+)/i);
+  if(startM)start=startM[1].trim();
+
   return {
     id:Date.now()+Math.random(),
-    kind:'event',date,time,role,type,detail:clean,von,nach,
-    kmStart:kmStart?kmStart[1].replace(',','.'):'',
+    kind:'event',date,time,role,type,detail:clean,von,nach,start,
+    kmStart:kmStart?kmStart[1].replace(',','.'): '',
     kmEnd:kmEnd?kmEnd[1].replace(',','.'): '',
     haltKm:haltKm?haltKm[1].replace(',','.'): '',
     ort,zielart
   };
 }
 
+function parseSimulationShift(line){
+  // Simulator-only metadata. This is NOT a Meine-Schicht PLAN record.
+  // Format:
+  // SCHICHT|25.08.2026|14:00-22:30|AZF/RbBau|Wolfratshausen|BM Bahndienste|Augsburg
+  const p=line.split('|').map(x=>x.trim());
+  if(p.length<7 || p[0].toUpperCase()!=='SCHICHT') return null;
+  return {
+    kind:'simShift', id:Date.now()+Math.random(),
+    date:p[1], time:p[2], role:p[3], ort:p[4],
+    auftraggeber:p[5], start:p[6]
+  };
+}
+
 function parseText(text){
   const raw=text.trim();
 
-  // 1) Echter Meine-Schicht-Datenimport: JSON-Array oder einzelne JSON-Objekte.
   try{
     const parsedJson=JSON.parse(raw);
     const arr=Array.isArray(parsedJson)?parsedJson:[parsedJson];
-    const valid=arr.filter(x=>x && (x.kind==='plan'||x.kind==='event') && x.date && x.time);
+    const valid=arr.filter(x=>x && (x.kind==='plan'||x.kind==='event'||x.kind==='simShift') && x.date && x.time);
     if(valid.length) return valid.map(x=>({...x,id:x.id||Date.now()+Math.random()}));
   }catch(e){}
 
-  // 2) Fallback für den bisherigen lesbaren Testtext.
-  return text.split(/\r?\n/).map(parseLine).filter(Boolean);
+  const out=[];
+  for(const line of text.split(/\r?\n/)){
+    const t=line.trim();
+    if(!t) continue;
+    const sim=parseSimulationShift(t);
+    if(sim){out.push(sim);continue;}
+    const ev=parseLine(t);
+    if(ev) out.push(ev);
+  }
+  return out;
 }
 
 function simulate(){
@@ -254,7 +279,7 @@ function simulate(){
   save(d);
 
   document.getElementById('input').value='';
-  document.getElementById('message').innerHTML='<span class="ok">✓ Simulation übernommen:</span> '+parsed.filter(x=>x.kind==='event').length+' Ereignisse + '+parsed.filter(x=>x.kind==='plan').length+' geplante Schichten.';
+  document.getElementById('message').innerHTML='<span class="ok">✓ Simulation übernommen:</span> '+parsed.filter(x=>x.kind==='event').length+' Ereignisse + '+parsed.filter(x=>x.kind==='simShift').length+' simulierte Schichten.';
   render();
 }
 
@@ -375,18 +400,7 @@ function clearAll(){
 }
 
 function example(){
-  document.getElementById('input').value=`25.08.2026 11:41:27 Abfahrt Start: Zweiter Wohnsitz / Unterkunft · KM Start: 55553
-25.08.2026 13:06:35 Angekommen Ziel: Einsatzort · Ort: Wolfratshausen
-25.08.2026 13:33:59 AZF./RbBau Schichtbeginn
-25.08.2026 13:34:15 AZF./RbBau Beladen + Entladen
-25.08.2026 14:10:30 AZF./RbBau Rangieren geschoben km 22,2 km 23,3
-25.08.2026 14:15:35 AZF./RbBau Halten / Warten KM Halt: 23.1 · Sonstiges – Schichtwechsel Arbeiter
-25.08.2026 16:58:56 AZF./RbBau Rangieren gezogen km 23,3 km 22,2
-25.08.2026 20:05:44 AZF./RbBau Wagen / Lok abgestellt Gleis 42
-25.08.2026 20:05:56 AZF./RbBau Wagen gesichert Hemmschuhe
-25.08.2026 20:17:39 AZF./RbBau Schichtende
-25.08.2026 21:27:08 AZF./RbBau Ankunft / Tagesabschluss Ziel: Zweiter Wohnsitz / Unterkunft · KM Ende: 55773
-Gefahrene Kilometer am Tag: 220 km`;
+  document.getElementById('input').value="SCHICHT|25.08.2026|14:00-22:30|AZF/RbBau|Wolfratshausen|BM Bahndienste|Augsburg\n25.08.2026 13:06:35 AZF/RbBau Angekommen Ziel: Einsatzort · Ort: Wolfratshausen\n25.08.2026 13:33:59 AZF/RbBau Schichtbeginn\n25.08.2026 20:17:39 AZF/RbBau Schichtende\n25.08.2026 21:27:08 AZF/RbBau Ankunft / Tagesabschluss Ziel: Augsburg · KM Ende: 55773";
 }
 
 
@@ -444,24 +458,30 @@ function eventsForPlan(plan, all){
 }
 function monthlyRows(){
   const all=load();
-  const plans=all.filter(x=>x.kind==='plan').sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
+  const sources=all.filter(x=>x.kind==='simShift'||x.kind==='plan')
+    .sort((a,b)=>dateKey(a.date).localeCompare(dateKey(b.date)));
   const rows=Array.from({length:31},(_,i)=>[i+1,'','','','','','','','','','','','','','','','']);
 
-  for(const plan of plans){
-    const m=String(plan.date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  for(const src of sources){
+    const m=String(src.date||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
     if(!m)continue;
     const day=Number(m[1]);
     if(day<1||day>31)continue;
 
-    const ev=eventsForPlan(plan,all);
+    const ev=src.kind==='plan' ? eventsForPlan(src,all)
+      : all.filter(x=>x.kind==='event' &&
+          [src.date, addDays(src.date,1)].includes(x.date) &&
+          (!src.role || !x.role || x.role===src.role))
+        .sort((a,b)=>(dateKey(a.date)+' '+a.time).localeCompare(dateKey(b.date)+' '+b.time));
+
     const dep=ev.find(x=>x.type==='Abfahrt');
     const arr=ev.find(x=>x.type==='Angekommen');
     const end=ev.find(x=>x.type==='Ankunft / Tagesabschluss');
-    const planned=parsePlannedShift(plan.time||'');
+    const planned=parsePlannedShift(src.time||'');
 
-    // Wohnort und Baustelle kommen aus den dafür vorgesehenen App-Feldern.
-    const wohnort=dep?.start || dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
-    const baustelle=plan.ort || arr?.ort || '';
+    const wohnort=src.start || dep?.start ||
+      dep?.detail?.match(/Start:\s*([^·]+)/i)?.[1]?.trim() || '';
+    const baustelle=src.ort || arr?.ort || '';
     const reisezeit=dep && end ? `${dep.time||''}–${end.time||''}` : '';
 
     let kmDay='';
@@ -472,41 +492,28 @@ function monthlyRows(){
 
     const pause=planned ? reportPause(reportDuration(planned.start,planned.end)) : null;
     const actual=planned && pause!==null
-      ? Number(Math.max(0,reportDuration(planned.start,planned.end)-pause).toFixed(2))
-      : '';
+      ? Number(Math.max(0,reportDuration(planned.start,planned.end)-pause).toFixed(2)) : '';
 
-    const customer=plan.auftraggeber || '';
-    // In der Vorlage ist diese Spalte "Auftraggeber oder Baustelle".
+    const customer=src.auftraggeber || '';
     const auftragBaustelle=customer ? (baustelle ? customer+' / '+baustelle : customer) : baustelle;
 
     rows[day-1]=[
-      day,
-      wohnort,
-      baustelle,
-      reisezeit,
-      kmDay,
-      plan.plate||plan.kennzeichen||'',
-      kmDay,
-      '',
-      plan.privateKm||'',
-      plan.overnight?'1':'',
-      plan.role||ev.find(x=>x.role)?.role||'',
-      auftragBaustelle,
-      planned?.start||'',
-      planned?.end||'',
-      pause==null?'':pause,
-      actual,
-      ''
+      day, wohnort, baustelle, reisezeit, kmDay,
+      src.plate||src.kennzeichen||'', kmDay, '',
+      src.privateKm||'', src.overnight?'1':'',
+      src.role||ev.find(x=>x.role)?.role||'',
+      auftragBaustelle, planned?.start||'', planned?.end||'',
+      pause==null?'':pause, actual, ''
     ];
   }
   return rows;
 }
 
 function previewMonthlyReport(){
-  const planCount=load().filter(x=>x.kind==='plan').length;
-  if(!planCount){
+  const sourceCount=load().filter(x=>x.kind==='plan'||x.kind==='simShift').length;
+  if(!sourceCount){
     document.getElementById('reportPreview').innerHTML='';
-    document.getElementById('reportMessage').innerHTML='<span class="warn">⚠️ Keine geplanten Schichten erkannt. Bitte die PLAN-Daten aus Meine Schicht importieren.</span>';
+    document.getElementById('reportMessage').innerHTML='<span class="warn">⚠️ Keine simulierte Schicht erkannt.</span>';
     return;
   }
 
@@ -560,9 +567,9 @@ async function exportMonthlyReport(){
     }
 
     const all=load();
-    const plans=all.filter(x=>x.kind==='plan');
-    if(!plans.length){
-      throw new Error('Keine geplanten Schichten erkannt. Für die Excel-Zuordnung müssen die PLAN-Daten aus Meine Schicht mit importiert werden.');
+    const sources=all.filter(x=>x.kind==='plan'||x.kind==='simShift');
+    if(!sources.length){
+      throw new Error('Keine simulierte Schicht erkannt.');
     }
 
     const rows=monthlyRows();
