@@ -730,7 +730,7 @@ input::placeholder{color:#6f8798}
 
   <div class="section-label">AUFGABENBEREICHE</div>
   <div class="card role-card"><div class="grid role-grid">
-    <button class="role az" onclick="openRole('AZF./RbBau')">🚂<br><span>AZF. / RbBau</span></button>
+    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
     <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
     <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
     <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
@@ -775,7 +775,7 @@ input::placeholder{color:#6f8798}
 <label>Von</label><input id="pFrom" type="date">
 <label>Bis</label><input id="pTo" type="date">
 <div class="row"><div><label>Von</label><input id="pTimeFrom" type="time"></div><div><label>Bis</label><input id="pTimeTo" type="time"></div></div>
-<label>Tätigkeit</label><select id="pRole"><option>AZF./RbBau</option><option>SAKRA</option><option>BüP</option><option>Sipo</option></select>
+<label>Tätigkeit</label><select id="pRole"><option>RbBau</option><option>SAKRA</option><option>BüP</option><option>Sipo</option></select>
 <label>Einsatzort</label><input id="pOrt" placeholder="z. B. Wolfratshausen">
 <label>Auftraggeber</label><input id="pAuftraggeber" placeholder="Auftraggeber">
 <label>Wochentage übernehmen</label>
@@ -876,8 +876,8 @@ function arrive(){
  if(!ort)return;
  add('Angekommen',{zielart:ort,ort});
 }
-function beginShift(){let r=prompt('Funktion:\n1 AZF./RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'AZF./RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
-function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='AZF./RbBau'?'🚂 AZF. / RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
+function beginShift(){let r=prompt('Funktion:\n1 RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
+function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='RbBau'?'🚂 RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
 function setupRole(){let e=document.getElementById('setup');if(role==='Sipo')e.innerHTML='<label>Zugeordnete SAKRA (optional)</label><input id="sS" placeholder="Name"><button class="small" onclick="saveSetup()">Speichern</button>';else if(role==='SAKRA')e.innerHTML='<label>Sipo dabei (optional)</label><input id="sS"><label>Einsatzbereich</label><select id="sA" onchange="sakFields()"><option value="">Bitte wählen</option><option>Bahnhof</option><option>Strecke</option><option>Bahnübergang</option></select><div id="sF"></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else if(role==='BüP')e.innerHTML='<label>BÜ / Bezeichnung</label><input id="bN"><label>Strecke</label><input id="bS"><label>km</label><input id="bK"><div class="row"><div><label>Fahrdienst 1</label><input id="f1"></div><div><label>Fahrdienst 2 optional</label><input id="f2"></div></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else e.innerHTML='<div class="muted">Rangier- und Baustellendokumentation.</div>'}
 function sakFields(){let v=document.getElementById('sA').value,e=document.getElementById('sF');e.innerHTML=v==='Bahnhof'?'<label>Bahnhof</label><input id="sP">':v==='Strecke'?'<label>Strecke</label><input id="sP"><label>km</label><input id="sK">':v==='Bahnübergang'?'<label>BÜ</label><input id="sP"><label>Strecke</label><input id="sT"><label>km</label><input id="sK">':''}
 function saveSetup(){let n=now(),d=get(),x={kind:'setup',date:n.date,time:n.time,role};if(role==='Sipo')x.sakra=document.getElementById('sS').value;if(role==='SAKRA'){x.sipo=document.getElementById('sS').value;x.area=document.getElementById('sA').value;x.place=document.getElementById('sP')?.value||'';x.km=document.getElementById('sK')?.value||'';x.strecke=document.getElementById('sT')?.value||''}if(role==='BüP'){x.bue=document.getElementById('bN').value;x.strecke=document.getElementById('bS').value;x.km=document.getElementById('bK').value;x.fd1=document.getElementById('f1').value;x.fd2=document.getElementById('f2').value}d.push(x);save(d);renderRole()}
