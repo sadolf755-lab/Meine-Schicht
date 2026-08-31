@@ -23,7 +23,27 @@ button.back{background:#0a1928}
 .stats{display:flex;justify-content:space-between;gap:12px;color:#bcd0dd}
 .empty{color:var(--muted);padding:10px 0}
 .rowitem{border:1px solid #1a435d;background:#071826;border-radius:14px;padding:12px;margin:8px 0;display:grid;gap:4px}
+.check{background:#132536;border-color:#2c78a8;color:#dff3ff}
 .muted{color:var(--muted);font-size:13px}
+.entry-check-overlay{position:fixed;inset:0;background:#02070dcc;z-index:9999;display:none;overflow:auto;padding:18px}
+.entry-check-panel{max-width:1200px;margin:0 auto;background:linear-gradient(180deg,#071725,#06111b);border:1px solid #24536f;border-radius:20px;box-shadow:0 12px 45px #000b;padding:18px}
+.entry-check-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.entry-check-head h2{margin:0}
+.entry-check-close{width:auto;margin:0;padding:10px 14px;background:#111f2c;border-color:#31546a}
+.entry-check-note{margin:0 0 12px;color:#a9bdca;font-size:13px}
+.entry-check-table-wrap{overflow:auto;border:1px solid #1b435b;border-radius:14px}
+.entry-check-table{width:100%;border-collapse:collapse;min-width:1250px;font-size:13px}
+.entry-check-table th,.entry-check-table td{border:1px solid #1a435d;padding:8px 9px;text-align:left;vertical-align:top}
+.entry-check-table th{background:#0b2435;color:#eaf6ff;position:sticky;top:0;z-index:1;white-space:nowrap}
+.entry-check-table td{background:#071826}
+.entry-check-table tr:nth-child(even) td{background:#091e2d}
+.entry-check-table .num{text-align:right;white-space:nowrap}
+.entry-check-empty{padding:18px;text-align:center;color:var(--muted)}
+@media(max-width:800px){
+  .entry-check-overlay{padding:8px}
+  .entry-check-panel{padding:12px;border-radius:16px}
+  .entry-check-head{align-items:flex-start}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
@@ -42,6 +62,7 @@ button.back{background:#0a1928}
 
 <div class="card">
   <button class="primary" onclick="showRows()">📊 Excel-Ansicht aktualisieren</button>
+  <button class="check" onclick="openEntryCheck()">👁️ Einträge prüfen</button>
   <button class="green" onclick="exportMonthlyReport()">⬇️ Excel herunterladen</button>
   <button class="back" onclick="backToApp()">↩️ Zurück zu Meine Schicht</button>
   <div id="reportMessage" class="muted" style="margin-top:10px"></div>
@@ -169,26 +190,9 @@ function buildReportRows(){
     const arbeitszeit=durationHours(arbeitsVon,arbeitsBis);
     const pause=pauseForHours(arbeitszeit);
 
-    const privateEvents=ev.filter(x=>
-      x.type==='Privatfahrt' || x.type==='Private Fahrt mit Firmen-KFZ'
-    );
-    const privateKm=privateEvents.reduce((s,x)=>
-      s+(kmNumber(x.privateKm)||0),0
-    );
-
-    // Eine reine Privatfahrt ist kein dienstlicher Tagesweg.
-    // Für diesen Fall werden ausschließlich B, C und I befüllt:
-    // B = Startort, C = Zielort, I = private Kilometer.
-    const hasBusinessData=ev.some(x=>
-      x.type==='Abfahrt' ||
-      x.type==='Angekommen' ||
-      x.type==='Ankunft / Tagesabschluss' ||
-      x.type==='Schichtbeginn' ||
-      x.type==='Schichtende' ||
-      x.role ||
-      x.auftraggeber
-    );
-    const purePrivate=privateEvents.length>0 && !hasBusinessData;
+    const privateKm=ev
+      .filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
+      .reduce((s,x)=>s+(kmNumber(x.privateKm)||0),0);
 
     const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
@@ -198,30 +202,6 @@ function buildReportRows(){
 
     if(!ev.length){
       rows.push([day,'','','','','','','', '', '', '', '', '', '', '', '', '']);
-      continue;
-    }
-
-    if(purePrivate){
-      const p=privateEvents[privateEvents.length-1];
-      rows.push([
-        day,                         // A Tag
-        p.privateStart||'',          // B von Wohnort = Startort Privatfahrt
-        p.privateZiel||'',           // C zur Baustelle = Zielort Privatfahrt
-        '',                          // D
-        '',                          // E
-        '',                          // F
-        '',                          // G
-        '',                          // H
-        privateKm||'',               // I km privat mit Firmen-Kfz
-        '',                          // J
-        '',                          // K
-        '',                          // L
-        '',                          // M
-        '',                          // N
-        '',                          // O
-        '',                          // P
-        ''                           // Q
-      ]);
       continue;
     }
 
@@ -248,6 +228,77 @@ function buildReportRows(){
 
   buildReportRows._realDayCount=realDayCount;
   return rows;
+}
+
+
+function formatCheckValue(v, colIndex){
+  if(v===null || v===undefined || v==='') return '–';
+  if([4,6,8,14,15].includes(colIndex) && typeof v==='number'){
+    return Number(v).toLocaleString('de-DE');
+  }
+  return String(v);
+}
+
+function openEntryCheck(){
+  const rows=buildReportRows();
+  const realDayCount=buildReportRows._realDayCount||0;
+
+  let overlay=document.getElementById('entryCheckOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='entryCheckOverlay';
+    overlay.className='entry-check-overlay';
+    overlay.innerHTML=`
+      <div class="entry-check-panel">
+        <div class="entry-check-head">
+          <h2>👁️ Einträge prüfen</h2>
+          <button class="entry-check-close" onclick="closeEntryCheck()">✕ Schließen</button>
+        </div>
+        <p class="entry-check-note">
+          Kontrollansicht der Daten, die der Monatsbericht aktuell für die Excel-Übertragung vorbereitet.
+          Diese Ansicht liest dieselben aufbereiteten A–Q-Daten und verändert keine gespeicherten Schichtdaten.
+        </p>
+        <div id="entryCheckContent"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  const box=document.getElementById('entryCheckContent');
+
+  if(!realDayCount){
+    box.innerHTML='<div class="entry-check-empty">Noch keine gespeicherten Tagesdaten vorhanden.</div>';
+  }else{
+    const visibleRows=rows.filter(r =>
+      r.slice(1).some(v=>v!=='' && v!==null && v!==undefined)
+    );
+
+    box.innerHTML=`
+      <div class="entry-check-note"><b>${realDayCount}</b> gespeicherte Tage · <b>${visibleRows.length}</b> vorbereitete Excel-Zeilen</div>
+      <div class="entry-check-table-wrap">
+        <table class="entry-check-table">
+          <thead>
+            <tr>${reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr>
+          </thead>
+          <tbody>
+            ${visibleRows.map(r=>`
+              <tr>${r.map((v,i)=>{
+                const cls=[4,6,8,14,15].includes(i)?' class="num"':'';
+                return '<td'+cls+'>'+esc(formatCheckValue(v,i))+'</td>';
+              }).join('')}</tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  overlay.style.display='block';
+  document.body.style.overflow='hidden';
+}
+
+function closeEntryCheck(){
+  const overlay=document.getElementById('entryCheckOverlay');
+  if(overlay) overlay.style.display='none';
+  document.body.style.overflow='';
 }
 
 function showRows(){
@@ -456,6 +507,10 @@ async function exportMonthlyReport(){
   }
 }
 showRows();
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeEntryCheck();
+});
 </script>
 </body>
 </html>
