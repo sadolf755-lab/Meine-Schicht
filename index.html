@@ -794,6 +794,8 @@ input::placeholder{color:#6f8798}
 <label>Arbeitgeber</label><input id="setEmployer" placeholder="Arbeitgeber">
 <label>Mein Name</label><input id="setName" placeholder="Vorname Nachname">
 <label>Personalnummer</label><input id="setPersonal" placeholder="Personalnummer">
+<label>Hauptwohnung</label><input id="setHauptwohnung" placeholder="Ort der Hauptwohnung">
+<label>Zweite Wohnung / Unterkunft</label><input id="setZweiteWohnung" placeholder="Ort der zweiten Wohnung / Unterkunft">
 <button class="small" onclick="saveSettings()">💾 Daten speichern</button>
 </div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
@@ -809,11 +811,30 @@ function show(id){['home','plan','role','settings'].forEach(x=>document.getEleme
 const SETTINGS_KEY='meine_schicht_stammdaten';
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch(e){return{}}}
 function openSettings(){loadSettings();show('settings')}
-function loadSettings(){let s=getSettings();document.getElementById('setEmployer').value=s.employer||'';document.getElementById('setName').value=s.name||'';document.getElementById('setPersonal').value=s.personal||''}
-function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify({employer:document.getElementById('setEmployer').value.trim(),name:document.getElementById('setName').value.trim(),personal:document.getElementById('setPersonal').value.trim()}));alert('Persönliche Daten gespeichert.')}
+function loadSettings(){
+ let s=getSettings();
+ document.getElementById('setEmployer').value=s.employer||'';
+ document.getElementById('setName').value=s.name||'';
+ document.getElementById('setPersonal').value=s.personal||'';
+ document.getElementById('setHauptwohnung').value=s.hauptwohnung||'';
+ document.getElementById('setZweiteWohnung').value=s.zweiteWohnung||'';
+}
+function saveSettings(){
+ localStorage.setItem(SETTINGS_KEY,JSON.stringify({
+   employer:document.getElementById('setEmployer').value.trim(),
+   name:document.getElementById('setName').value.trim(),
+   personal:document.getElementById('setPersonal').value.trim(),
+   hauptwohnung:document.getElementById('setHauptwohnung').value.trim(),
+   zweiteWohnung:document.getElementById('setZweiteWohnung').value.trim()
+ }));
+ alert('Persönliche Daten und Wohnorte gespeichert.');
+}
 function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
 function simpleEvent(type){add(type)}
 function chooseOrt(promptText,includeEinsatzort=false){
+ let s=getSettings();
+ let haupt=s.hauptwohnung||'Hauptwohnung';
+ let zweite=s.zweiteWohnung||'Zweite Wohnung / Unterkunft';
  let plannedOrt='';
  if(includeEinsatzort){
    let todayDate=today();
@@ -822,8 +843,8 @@ function chooseOrt(promptText,includeEinsatzort=false){
    plannedOrt=plans[0]?.ort||'';
  }
  let options=includeEinsatzort
-   ? '1 = Hauptwohnung\n2 = Zweite Wohnung / Unterkunft\n3 = Büro\n4 = Einsatzort'+(plannedOrt?' ('+plannedOrt+')':'')+'\n5 = Anderer Ort'
-   : '1 = Hauptwohnung\n2 = Zweite Wohnung / Unterkunft\n3 = Büro\n4 = Anderer Ort';
+   ? '1 = Hauptwohnung ('+haupt+')\n2 = Zweite Wohnung / Unterkunft ('+zweite+')\n3 = Büro\n4 = Einsatzort'+(plannedOrt?' ('+plannedOrt+')':'')+'\n5 = Anderer Ort'
+   : '1 = Hauptwohnung ('+haupt+')\n2 = Zweite Wohnung / Unterkunft ('+zweite+')\n3 = Büro\n4 = Anderer Ort';
  let v=prompt(promptText+'\n\n'+options,'1');
  if(v===null)return null;
  if(includeEinsatzort && v==='4'){
@@ -833,8 +854,8 @@ function chooseOrt(promptText,includeEinsatzort=false){
    return o.trim();
  }
  let m=includeEinsatzort
-   ? {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'}
-   : {'1':'Hauptwohnung','2':'Zweite Wohnung / Unterkunft','3':'Büro'};
+   ? {'1':haupt,'2':zweite,'3':'Büro'}
+   : {'1':haupt,'2':zweite,'3':'Büro'};
  if(v==='5' || (!includeEinsatzort && v==='4')){
    let o=prompt('Ort:','');
    if(o===null||!o.trim())return null;
