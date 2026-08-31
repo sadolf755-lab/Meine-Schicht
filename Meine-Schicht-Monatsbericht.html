@@ -240,10 +240,13 @@ function formatCheckValue(v, colIndex){
 }
 
 function openEntryCheck(){
-  const rows=buildReportRows();
-  const realDayCount=buildReportRows._realDayCount||0;
+  // Erst die bestehende Monatsbericht-Ansicht aktualisieren.
+  showRows();
 
+  const source=document.getElementById('rows');
+  const count=document.getElementById('count');
   let overlay=document.getElementById('entryCheckOverlay');
+
   if(!overlay){
     overlay=document.createElement('div');
     overlay.id='entryCheckOverlay';
@@ -255,40 +258,25 @@ function openEntryCheck(){
           <button class="entry-check-close" onclick="closeEntryCheck()">✕ Schließen</button>
         </div>
         <p class="entry-check-note">
-          Kontrollansicht der Daten, die der Monatsbericht aktuell für die Excel-Übertragung vorbereitet.
-          Diese Ansicht liest dieselben aufbereiteten A–Q-Daten und verändert keine gespeicherten Schichtdaten.
+          Monatsbericht-Vorschau der aktuell gespeicherten Tagesdaten.
+          Diese Ansicht entspricht der normalen Monatsbericht-Anzeige und verändert keine Daten.
         </p>
+        <div class="entry-check-note" id="entryCheckCount"></div>
         <div id="entryCheckContent"></div>
       </div>`;
     document.body.appendChild(overlay);
   }
 
-  const box=document.getElementById('entryCheckContent');
+  const content=document.getElementById('entryCheckContent');
+  const countBox=document.getElementById('entryCheckCount');
 
-  if(!realDayCount){
-    box.innerHTML='<div class="entry-check-empty">Noch keine gespeicherten Tagesdaten vorhanden.</div>';
+  countBox.innerHTML=`<b>${esc(count.textContent||'0')}</b> gespeicherte Tage`;
+
+  if(!source || !source.innerHTML.trim()){
+    content.innerHTML='<div class="entry-check-empty">Keine Monatsbericht-Einträge vorhanden.</div>';
   }else{
-    const visibleRows=rows.filter(r =>
-      r.slice(1).some(v=>v!=='' && v!==null && v!==undefined)
-    );
-
-    box.innerHTML=`
-      <div class="entry-check-note"><b>${realDayCount}</b> gespeicherte Tage · <b>${visibleRows.length}</b> vorbereitete Excel-Zeilen</div>
-      <div class="entry-check-table-wrap">
-        <table class="entry-check-table">
-          <thead>
-            <tr>${reportHeaders.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr>
-          </thead>
-          <tbody>
-            ${visibleRows.map(r=>`
-              <tr>${r.map((v,i)=>{
-                const cls=[4,6,8,14,15].includes(i)?' class="num"':'';
-                return '<td'+cls+'>'+esc(formatCheckValue(v,i))+'</td>';
-              }).join('')}</tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`;
+    // Die bereits gerenderte Monatsbericht-Ansicht 1:1 übernehmen.
+    content.innerHTML=source.innerHTML;
   }
 
   overlay.style.display='block';
