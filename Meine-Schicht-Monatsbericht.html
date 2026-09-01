@@ -200,10 +200,10 @@ function buildReportRows(){
     const purePrivate=privateEvents.length>0 && !hasBusinessData;
 
     const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
+    // Auftraggeber bleibt strikt vom Ort getrennt.
+    // Der Ort steht ausschließlich in C „zur Baustelle“.
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
-    const auftragBaustelle=auftrag
-      ? (baustelle ? auftrag+' / '+baustelle : auftrag)
-      : baustelle;
+    const auftragBaustelle=auftrag;
 
     if(!ev.length){
       rows.push([day,'','','','','','','', '', '', '', '', '', '', '', '', '']);
