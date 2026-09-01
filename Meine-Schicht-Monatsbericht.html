@@ -174,9 +174,30 @@ function buildReportRows(){
     const arbeitszeit=durationHours(arbeitsVon,arbeitsBis);
     const pause=pauseForHours(arbeitszeit);
 
-    const privateKm=ev
-      .filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
-      .reduce((s,x)=>s+(kmNumber(x.privateKm)||0),0);
+    // Privatfahrt: neue Datenstruktur aus Meine Schicht verwenden.
+    // Der alte Ereignistyp bleibt aus Kompatibilitätsgründen ebenfalls gültig.
+    const privateEvents=ev.filter(x=>
+      x.type==='Privatfahrt' || x.type==='Private Fahrt mit Firmen-KFZ'
+    );
+    const privateKm=privateEvents.reduce((s,x)=>
+      s+(kmNumber(x.privateKm)||0),0
+    );
+
+    // Wenn an diesem Tag ausschließlich eine Privatfahrt erfasst wurde,
+    // werden B/C/I damit befüllt:
+    // B = Startort, C = Zielort, I = private Kilometer.
+    // An einem normalen Arbeitstag bleiben B/C die dienstlichen Reiseangaben;
+    // die Privatkilometer gehen nur in I.
+    const hasBusinessData=ev.some(x=>
+      x.type==='Abfahrt' ||
+      x.type==='Angekommen' ||
+      x.type==='Ankunft / Tagesabschluss' ||
+      x.type==='Schichtbeginn' ||
+      x.type==='Schichtende' ||
+      x.role ||
+      x.auftraggeber
+    );
+    const purePrivate=privateEvents.length>0 && !hasBusinessData;
 
     const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
@@ -186,6 +207,30 @@ function buildReportRows(){
 
     if(!ev.length){
       rows.push([day,'','','','','','','', '', '', '', '', '', '', '', '', '']);
+      continue;
+    }
+
+    if(purePrivate){
+      const p=privateEvents[privateEvents.length-1];
+      rows.push([
+        day,                         // A Tag
+        p.privateStart||'',          // B von Wohnort = Startort Privatfahrt
+        p.privateZiel||'',           // C zur Baustelle = Zielort Privatfahrt
+        '',                          // D
+        '',                          // E
+        '',                          // F
+        '',                          // G
+        '',                          // H
+        privateKm||'',               // I km privat mit Firmen-Kfz
+        '',                          // J
+        '',                          // K
+        '',                          // L
+        '',                          // M
+        '',                          // N
+        '',                          // O
+        '',                          // P
+        ''                           // Q
+      ]);
       continue;
     }
 
