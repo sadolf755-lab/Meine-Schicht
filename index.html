@@ -809,7 +809,7 @@ function idbDelete(store,key){return openDB().then(db=>new Promise((resolve,reje
 let __data=[];let __settings={};let __activeRangier=null;const get=()=>__data;const save=d=>{__data=d;return Promise.all(d.map(x=>idbPut(x.kind==='plan'?PLANS_STORE:EVENTS_STORE,x)))};
 function getActiveRangier(){return __activeRangier}function setActiveRangier(x){__activeRangier=x||null;return x?idbPut(RANGIER_STORE,{id:'current',...x}):idbDelete(RANGIER_STORE,'current')}
 async function loadDevDB(){const [events,plans,settings,rangier]=await Promise.all([idbAll(EVENTS_STORE),idbAll(PLANS_STORE),idbAll(SETTINGS_STORE),idbAll(RANGIER_STORE)]);__data=[...events,...plans];__settings=settings.find(x=>x.id==='personal')||{};__activeRangier=rangier.find(x=>x.id==='current')||null}
-openDB().then(loadDevDB).catch(e=>console.error('IndexedDB',e));const pad=n=>String(n).padStart(2,'0');
+let devDBReady=openDB().then(loadDevDB).catch(e=>console.error('IndexedDB',e));const pad=n=>String(n).padStart(2,'0');
 function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
@@ -836,7 +836,7 @@ async function saveSettings(){
  await idbPut(SETTINGS_STORE,__settings);
  alert('Persönliche Daten und Wohnorte gespeichert.');
 }
-function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
+async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item={kind:'event',date:n.date,time:n.time,type,role,...extra};await idbPut(EVENTS_STORE,item);__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
 function chooseOrt(promptText,includeEinsatzort=false){
  let s=getSettings();
@@ -1470,5 +1470,5 @@ function render(){
     : 'Noch keine Erfassung.';
   renderEvents();
 }
-render();
+devDBReady.then(()=>{render();renderRole();});
 </script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});</script></body></html>
