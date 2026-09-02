@@ -842,7 +842,7 @@ async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item=
   const signature=JSON.stringify({date:item.date,time:item.time,type:item.type,role:item.role||'',extra});
   const duplicate=d.some(x=>x&&x.kind==='event'&&JSON.stringify({date:x.date,time:x.time,type:x.type,role:x.role||'',extra:Object.fromEntries(Object.entries(x).filter(([k])=>!['kind','id','date','time','type','role'].includes(k)) )})===signature);
   if(duplicate)return;
-  await idbPut(EVENTS_STORE,item);__data.push(item);render();renderRole()}
+  const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
 function chooseOrt(promptText,includeEinsatzort=false){
  let s=getSettings();
@@ -1201,7 +1201,22 @@ function clearAllData(){
 function renderEvents(){
  let e=document.getElementById('events');
  let a=getShiftEvents();
- e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event"><b>${x.date} ${x.time}</b> – ${esc(x.type)}${x.fahrart?' – '+esc(x.fahrart):''}${x.haltKm?' – Halt km '+esc(x.haltKm):''}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}</div>`).join(''):'Noch keine Ereignisse.';
+ e.innerHTML=a.length?a.slice().reverse().map(x=>`<div class="event" style="position:relative;padding-right:52px"><b>${x.date} ${x.time}</b> – ${esc(x.type)}${x.fahrart?' – '+esc(x.fahrart):''}${x.haltKm?' – Halt km '+esc(x.haltKm):''}${x.detail?' – '+esc(x.detail):''}${x.von?' – '+esc(x.von)+' → '+esc(x.nach):''}${x.id!=null?`<button onclick="deleteEvent(${Number(x.id)})" title="Diesen Eintrag löschen" style="position:absolute;right:5px;top:5px;padding:4px 7px;border-radius:9px;background:#3a1114;border:1px solid #ff4a45;color:#ffb8bd">🗑️</button>`:''}</div>`).join(''):'Noch keine Ereignisse.';
+}
+async function deleteEvent(id){
+ await devDBReady;
+ const item=__data.find(x=>x&&x.kind==='event'&&Number(x.id)===Number(id));
+ if(!item)return;
+ if(!confirm('Diesen Eintrag wirklich löschen?\n\n'+item.date+' '+item.time+' – '+item.type))return;
+ try{
+   await idbDelete(EVENTS_STORE,id);
+   __data=__data.filter(x=>!(x&&x.kind==='event'&&Number(x.id)===Number(id)));
+   render();
+   renderRole();
+ }catch(e){
+   console.error('Fehler beim gezielten Löschen',e);
+   alert('Der Eintrag konnte nicht gelöscht werden.');
+ }
 }
 function createPlans(){
  let from=document.getElementById('pFrom').value,to=document.getElementById('pTo').value;
@@ -1472,7 +1487,7 @@ function render(){
   document.getElementById('kw').textContent=kw();
   updateCockpitStatus();
   document.getElementById('today').innerHTML=getShiftEvents().length
-    ? getShiftEvents().slice().reverse().map(x=>`${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}`).join('<br>')
+    ? getShiftEvents().slice().reverse().map(x=>`<div style="position:relative;padding-right:42px;margin:2px 0">${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}${x.id!=null?`<button onclick="deleteEvent(${Number(x.id)})" title="Diesen Eintrag löschen" style="position:absolute;right:0;top:-4px;padding:2px 6px;border-radius:8px;background:#3a1114;border:1px solid #ff4a45;color:#ffb8bd;font-size:12px">🗑️</button>`:''}</div>`).join('')
     : 'Noch keine Erfassung.';
   renderEvents();
 }
