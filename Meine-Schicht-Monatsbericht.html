@@ -220,11 +220,16 @@ function buildReportRows(){
     const ausserHaus=durationHours(reiseVon,reiseBis);
     const kmDay=date?dailyKmForDate(date,g):0;
 
-    let arbeitsVon=shiftStart?.time||'';
-    let arbeitsBis=shiftEnd?.time||'';
-    if(!arbeitsVon && plan?.time){
+    // Monatsbericht: Arbeitszeit immer aus dem geplanten Einsatz übernehmen.
+    // Die tatsächlich dokumentierten Schichtzeiten bleiben ausschließlich in den Tagesdaten/Bautagesberichten.
+    let arbeitsVon='';
+    let arbeitsBis='';
+    if(plan?.time){
       const m=String(plan.time).match(/^(\d{1,2}):(\d{2})\s*[–-]\s*(\d{1,2}):(\d{2})$/);
-      if(m){arbeitsVon=m[1].padStart(2,'0')+':'+m[2];arbeitsBis=m[3].padStart(2,'0')+':'+m[4];}
+      if(m){
+        arbeitsVon=m[1].padStart(2,'0')+':'+m[2];
+        arbeitsBis=m[3].padStart(2,'0')+':'+m[4];
+      }
     }
 
     const arbeitszeit=durationHours(arbeitsVon,arbeitsBis);
