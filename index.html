@@ -836,7 +836,13 @@ async function saveSettings(){
  await idbPut(SETTINGS_STORE,__settings);
  alert('Persönliche Daten und Wohnorte gespeichert.');
 }
-async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item={kind:'event',date:n.date,time:n.time,type,role,...extra};await idbPut(EVENTS_STORE,item);__data.push(item);render();renderRole()}
+async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item={kind:'event',date:n.date,time:n.time,type,role,...extra};
+  // Schutz gegen versehentliche Doppel-/Mehrfacherfassung durch einen mehrfachen Klick.
+  // Ein identischer Eintrag mit exakt gleicher Zeit und denselben Zusatzdaten wird nicht erneut gespeichert.
+  const signature=JSON.stringify({date:item.date,time:item.time,type:item.type,role:item.role||'',extra});
+  const duplicate=d.some(x=>x&&x.kind==='event'&&JSON.stringify({date:x.date,time:x.time,type:x.type,role:x.role||'',extra:Object.fromEntries(Object.entries(x).filter(([k])=>!['kind','id','date','time','type','role'].includes(k)) )})===signature);
+  if(duplicate)return;
+  await idbPut(EVENTS_STORE,item);__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
 function chooseOrt(promptText,includeEinsatzort=false){
  let s=getSettings();
