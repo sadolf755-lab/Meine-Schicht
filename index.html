@@ -797,7 +797,7 @@ input::placeholder{color:#6f8798}
 <label>Hauptwohnung</label><input id="setHauptwohnung" placeholder="Ort der Hauptwohnung">
 <label>Zweite Wohnung / Unterkunft</label><input id="setZweiteWohnung" placeholder="Ort der zweiten Wohnung / Unterkunft">
 <button class="small" onclick="saveSettings()">💾 Daten speichern</button>
-<button class="small" onclick="importLegacyData()">📥 Alte Daten aus Smartphone-Version übernehmen</button>
+<button class="small" onclick="exportDataForPC()">📤 Daten für PC exportieren</button>
 </div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
@@ -1453,6 +1453,58 @@ async function importLegacyData(){
    console.error('Fehler beim Import der alten Daten',e);
    alert('Die Daten konnten nicht vollständig übernommen werden.\n\n'+(e.message||e));
  }
+}
+
+
+async function exportDataForPC(){
+  try{
+    await devDBReady;
+
+    const [events,plans,settings,rangier]=await Promise.all([
+      idbAll(EVENTS_STORE),
+      idbAll(PLANS_STORE),
+      idbAll(SETTINGS_STORE),
+      idbAll(RANGIER_STORE)
+    ]);
+
+    const payload={
+      app:'Meine Schicht',
+      format:'MeineSchicht-IDB-Export-v1',
+      exportedAt:new Date().toISOString(),
+      database:DB_NAME,
+      events,
+      plans,
+      settings,
+      activeRangier:rangier.find(x=>x.id==='current')||null
+    };
+
+    const json=JSON.stringify(payload,null,2);
+    const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const d=new Date();
+    const stamp=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'_'+pad(d.getHours())+'-'+pad(d.getMinutes())+'-'+pad(d.getSeconds());
+
+    a.href=url;
+    a.download='Meine-Schicht-Sicherung-'+stamp+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+    alert(
+      'Datensicherung erstellt.\n\n'+
+      'Ereignisse: '+events.length+'\n'+
+      'Einsätze: '+plans.length+'\n'+
+      'Einstellungen: '+settings.length+'\n'+
+      'Aktiver Rangiervorgang: '+(payload.activeRangier?'vorhanden':'keiner')+
+      '\n\nDie Daten in der App wurden NICHT verändert.'
+    );
+  }catch(e){
+    console.error('Fehler beim Datenexport',e);
+    alert('Die Datensicherung konnte nicht erstellt werden.\n\n'+(e.message||e));
+  }
 }
 
 function load(){return get()}
