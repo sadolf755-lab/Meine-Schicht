@@ -1412,33 +1412,9 @@ function dailyKmTotal(events){
  return total;
 }
 function exportPDF(){
- let a=get().filter(x=>x.kind==='event');if(!a.length)return alert('Noch keine Daten.');
- let s=getSettings();
- let planByDate={};get().filter(x=>x.kind==='plan').forEach(p=>{planByDate[p.date]=p});
- let w=window.open('','_blank');if(!w)return alert('Pop-up blockiert.');
- let rows=a.map(x=>{
-  let detailParts=[];
-  if(x.start) detailParts.push('Start: '+x.start+(x.startOther?' ('+x.startOther+')':''));
-  if(x.kmStart) detailParts.push('KM Start: '+x.kmStart);
-  if(x.zielart) detailParts.push('Ziel: '+x.zielart);
-  if(x.ort) detailParts.push('Ort: '+x.ort);
-  if(x.kmEnd) detailParts.push('KM Ende: '+x.kmEnd);
-  if(x.haltKm) detailParts.push('KM Halt: '+x.haltKm);
-  if(x.fahrart) detailParts.push(x.fahrart);
-  if(x.detail) detailParts.push(x.detail); if(x.type==='Privatfahrt'){
-    if(x.privateStart) detailParts.push('Privat Start: '+x.privateStart);
-    if(x.privateZiel) detailParts.push('Privat Ziel: '+x.privateZiel);
-    if(x.privateKmStart) detailParts.push('KM Start: '+x.privateKmStart);
-    if(x.privateKmEnd) detailParts.push('KM Ende: '+x.privateKmEnd);
-    if(x.privateKm) detailParts.push('Private KM: '+x.privateKm);
-  }
-  return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`;
-}).join('');
- let firstDate=a[0]?.date||'';let p=planByDate[firstDate]||{};
- w.document.write(`<html><head><meta charset="utf-8"><title>Meine Schicht</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
-<div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
-<div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
-<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);w.document.close()}
+  window.location.href='./Meine-Schicht-Tagesbericht.html';
+}
+
 async function clearData(){
  if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
  try{
@@ -1598,7 +1574,7 @@ function updateCockpitStatus(){
 }
 
 function openMonthlyReport(){
-  window.location.href='./Meine-Schicht-Monatsbericht.html?source=dev';
+  window.location.href='./Meine-Schicht-Monatsbericht.html';
 }
 
 function render(){

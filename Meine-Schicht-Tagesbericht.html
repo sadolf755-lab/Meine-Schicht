@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meine Schicht – Tagesbericht</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#071522;color:#fff}
+.wrap{max-width:900px;margin:auto;padding:20px}
+.card{background:#0b1d2c;border:1px solid #164866;border-radius:18px;padding:18px;margin-bottom:16px}
+h1{margin:0 0 8px}h2{margin:0 0 12px}
+.muted{color:#a6b7c6}
+select,button{font:inherit;border-radius:10px;padding:10px 12px}
+select{width:100%;background:#061421;color:#fff;border:1px solid #2a607f;margin-bottom:12px}
+button{background:#0b2b40;color:#fff;border:1px solid #2a607f;cursor:pointer;margin-right:8px}
+button.primary{border-color:#1fa9ff}
+button.print{border-color:#e5a900}
+.report{background:#fff;color:#111;border-radius:12px;padding:22px;overflow:auto}
+.report table{width:100%;border-collapse:collapse;font-size:11px}
+.report th,.report td{border:1px solid #aaa;padding:5px;text-align:left;vertical-align:top}
+.report h1{color:#111;margin-bottom:8px}
+.report-actions{margin:16px 0}
+.empty{padding:12px 0;color:#a6b7c6}
+@media print{
+ body{background:#fff}
+ .no-print{display:none!important}
+ .wrap{max-width:none;padding:0}
+ .report{border:0;border-radius:0;padding:0}
+ @page{size:A4 landscape;margin:12mm}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card no-print">
+    <button onclick="backToApp()">← Zurück zu Meine Schicht</button>
+    <h1>📄 Tagesbericht</h1>
+    <div class="muted">Wähle den Tag, dessen Bericht angezeigt werden soll.</div>
+    <select id="dateSelect"></select>
+    <button class="primary" onclick="showReport()">Tagesbericht anzeigen</button>
+  </div>
+  <div id="reportArea" class="report">
+    <div class="empty">Noch keinen Tag ausgewählt.</div>
+  </div>
+</div>
+<script>
+const DB_NAME='MeineSchichtDB_DEV';
+const DB_VERSION=1;
+const EVENTS_STORE='events',PLANS_STORE='plans',SETTINGS_STORE='settings';
+let dbPromise=null;
+let events=[],plans=[],settings={};
+
+function openDB(){
+ if(dbPromise)return dbPromise;
+ dbPromise=new Promise((resolve,reject)=>{
+  const r=indexedDB.open(DB_NAME,DB_VERSION);
+  r.onsuccess=()=>resolve(r.result);
+  r.onerror=()=>reject(r.error);
+ });
+ return dbPromise;
+}
+function idbAll(store){
+ return openDB().then(db=>new Promise((resolve,reject)=>{
+  const r=db.transaction(store,'readonly').objectStore(store).getAll();
+  r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+ }));
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function kmNumber(v){let n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null;}
+function dailyKmTotal(a){
+ let total=0,lastStart=null;
+ a.forEach(x=>{
+  if(x.type==='Abfahrt'){let k=kmNumber(x.kmStart);if(k!==null)lastStart=k;}
+  if((x.type==='Angekommen'||x.type==='Ankunft / Tagesabschluss')&&x.kmEnd){
+   let end=kmNumber(x.kmEnd);
+   if(lastStart!==null&&end!==null&&end>=lastStart){total+=end-lastStart;lastStart=null;}
+  }
+ });
+ return total;
+}
+function formatDate(v){return v||'';}
+function loadData(){
+ return Promise.all([idbAll(EVENTS_STORE),idbAll(PLANS_STORE),idbAll(SETTINGS_STORE)]).then(([e,p,s])=>{
+  events=e.filter(x=>x&&x.kind==='event');
+  plans=p.filter(x=>x&&x.kind==='plan');
+  settings=s.find(x=>x.id==='personal')||{};
+  const dates=[...new Set(events.map(x=>x.date).filter(Boolean))].sort().reverse();
+  const sel=document.getElementById('dateSelect');
+  sel.innerHTML='';
+  if(!dates.length){
+   sel.innerHTML='<option value="">Keine Erfassungstage vorhanden</option>';
+   return;
+  }
+  dates.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+  showReport();
+ }).catch(e=>{
+  document.getElementById('reportArea').innerHTML='<div class="empty">Die gespeicherten Daten konnten nicht gelesen werden.<br><br>'+esc(e.message||e)+'</div>';
+ });
+}
+function showReport(){
+ const selectedDate=document.getElementById('dateSelect').value;
+ if(!selectedDate){document.getElementById('reportArea').innerHTML='<div class="empty">Für den Tagesbericht sind noch keine Daten vorhanden.</div>';return;}
+ const a=events.filter(x=>x.date===selectedDate);
+ if(!a.length){document.getElementById('reportArea').innerHTML='<div class="empty">Für diesen Tag sind keine Daten vorhanden.</div>';return;}
+ const plan=plans.find(p=>p.date===selectedDate)||{};
+ const rows=a.map(x=>{
+  let detailParts=[];
+  if(x.start)detailParts.push('Start: '+x.start+(x.startOther?' ('+x.startOther+')':''));
+  if(x.kmStart)detailParts.push('KM Start: '+x.kmStart);
+  if(x.zielart)detailParts.push('Ziel: '+x.zielart);
+  if(x.ort)detailParts.push('Ort: '+x.ort);
+  if(x.kmEnd)detailParts.push('KM Ende: '+x.kmEnd);
+  if(x.haltKm)detailParts.push('KM Halt: '+x.haltKm);
+  if(x.fahrart)detailParts.push(x.fahrart);
+  if(x.detail)detailParts.push(x.detail);
+  if(x.type==='Privatfahrt'){
+   if(x.privateStart)detailParts.push('Privat Start: '+x.privateStart);
+   if(x.privateZiel)detailParts.push('Privat Ziel: '+x.privateZiel);
+   if(x.privateKmStart)detailParts.push('KM Start: '+x.privateKmStart);
+   if(x.privateKmEnd)detailParts.push('KM Ende: '+x.privateKmEnd);
+   if(x.privateKm)detailParts.push('Private KM: '+x.privateKm);
+  }
+  return `<tr><td>${esc(x.date)}</td><td>${esc(x.time)}</td><td>${esc(x.role||'')}</td><td>${esc(x.type||'')}</td><td>${esc(detailParts.join(' · '))}</td><td>${esc(x.von||'')}</td><td>${esc(x.nach||'')}</td></tr>`;
+ }).join('');
+ document.getElementById('reportArea').innerHTML=`
+ <h1>Meine Schicht – Tagesbericht</h1>
+ <div><b>Datum:</b> ${esc(selectedDate)}</div>
+ <div><b>Arbeitgeber:</b> ${esc(settings.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(settings.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(settings.personal||'')}</div>
+ <div><b>Auftraggeber:</b> ${esc(plan.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(plan.ort||'')}</div>
+ <div class="report-actions no-print"><button class="print" onclick="window.print()">📄 Als PDF speichern</button></div>
+ <table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table>
+ <br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString('de-DE',{maximumFractionDigits:1})} km</div>`;
+}
+function backToApp(){window.location.assign('./index.html');}
+loadData();
+</script>
+</body>
+</html>
