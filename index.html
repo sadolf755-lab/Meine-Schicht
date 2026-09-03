@@ -684,6 +684,16 @@ input::placeholder{color:#6f8798}
 </style>
 
 
+<style id="direct-choice-ui">
+.choice-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+.choice-box{width:min(560px,100%);background:linear-gradient(180deg,#071b2b,#06121d);border:1px solid #1b5b7d;border-radius:20px;padding:18px;box-shadow:0 18px 50px #000c}
+.choice-title{font-size:20px;font-weight:800;color:#f5f8fb;margin:0 0 14px;white-space:pre-line}
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice-btn{min-height:62px!important;font-size:17px!important;background:#0a2030!important;border:1px solid #245b78!important;color:#fff!important;border-radius:14px!important}
+.choice-btn:hover{filter:brightness(1.12)}
+.choice-cancel{margin-top:10px;width:100%;background:#111b24!important;color:#9eb0c1!important}
+@media(max-width:600px){.choice-backdrop{padding:12px}.choice-box{padding:14px}.choice-title{font-size:18px}.choice-grid{grid-template-columns:1fr 1fr}.choice-btn{min-height:58px!important;font-size:16px!important}}
+</style>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -855,70 +865,81 @@ async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item=
   if(duplicate)return;
   const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
-function chooseOrt(promptText,includeEinsatzort=false){
- let s=getSettings();
- let haupt=s.hauptwohnung||'Hauptwohnung';
- let zweite=s.zweiteWohnung||'Zweite Wohnung / Unterkunft';
- let plannedOrt='';
- if(includeEinsatzort){
-   let todayDate=today();
-   let plans=get().filter(x=>x.kind==='plan' && x.date===todayDate && x.ort);
-   if(typeof role!=='undefined' && role) plans=plans.filter(x=>x.role===role);
-   plannedOrt=plans[0]?.ort||'';
- }
- let options=includeEinsatzort
-   ? '1 = Hauptwohnung ('+haupt+')\n2 = Zweite Wohnung / Unterkunft ('+zweite+')\n3 = Büro\n4 = Einsatzort'+(plannedOrt?' ('+plannedOrt+')':'')+'\n5 = Anderer Ort'
-   : '1 = Hauptwohnung ('+haupt+')\n2 = Zweite Wohnung / Unterkunft ('+zweite+')\n3 = Büro\n4 = Anderer Ort';
- let v=prompt(promptText+'\n\n'+options,'1');
- if(v===null)return null;
- if(includeEinsatzort && v==='4'){
-   if(plannedOrt)return plannedOrt;
-   let o=prompt('Einsatzort:','');
-   if(o===null||!o.trim())return null;
-   return o.trim();
- }
- let m=includeEinsatzort
-   ? {'1':haupt,'2':zweite,'3':'Büro'}
-   : {'1':haupt,'2':zweite,'3':'Büro'};
- if(v==='5' || (!includeEinsatzort && v==='4')){
-   let o=prompt('Ort:','');
-   if(o===null||!o.trim())return null;
-   return o.trim();
- }
- return m[v]||null;
+async function chooseOrt(promptText,includeEinsatzort=false){
+  let s=getSettings();
+  let haupt=s.hauptwohnung||'Hauptwohnung';
+  let zweite=s.zweiteWohnung||'Zweite Wohnung / Unterkunft';
+  let plannedOrt='';
+  if(includeEinsatzort){
+    let todayDate=today();
+    let plans=get().filter(x=>x.kind==='plan' && x.date===todayDate && x.ort);
+    if(typeof role!=='undefined' && role) plans=plans.filter(x=>x.role===role);
+    plannedOrt=plans[0]?.ort||'';
+  }
+  let options=[
+    {value:'haupt',label:'🏠 Hauptwohnung\n'+haupt},
+    {value:'zweite',label:'🏠 Zweite Wohnung\n'+zweite},
+    {value:'buero',label:'🏢 Büro'}
+  ];
+  if(includeEinsatzort) options.push({value:'einsatz',label:'📍 Einsatzort'+(plannedOrt?'\n'+plannedOrt:'')});
+  options.push({value:'anderer',label:'✏️ Anderer Ort'});
+  let v=await chooseOption(promptText,options);
+  if(v===null)return null;
+  if(v==='haupt')return haupt;
+  if(v==='zweite')return zweite;
+  if(v==='buero')return 'Büro';
+  if(v==='einsatz'){
+    if(plannedOrt)return plannedOrt;
+    let o=prompt('Einsatzort:','');
+    if(o===null||!o.trim())return null;
+    return o.trim();
+  }
+  let o=prompt('Ort:','');
+  if(o===null||!o.trim())return null;
+  return o.trim();
 }
-function departure(){
- let start=chooseOrt('Von wo startest du?');
- if(!start)return;
- let km=prompt('KM-Stand bei Abfahrt:','');
- if(km===null||!km.trim())return;
- if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Stand eingeben.');
- add('Abfahrt',{start,kmStart:km.trim().replace(',','.')});
+async function departure(){
+  let start=await chooseOrt('Von wo startest du?');
+  if(!start)return;
+  let km=prompt('KM-Stand bei Abfahrt:','');
+  if(km===null||!km.trim())return;
+  if(!/^\d+(?:[.,]\d+)?$/.test(km.trim()))return alert('Bitte einen gültigen KM-Stand eingeben.');
+  add('Abfahrt',{start,kmStart:km.trim().replace(',','.')});
 }
-function arrive(){
- let ort=chooseOrt('Wo ist dein Treffpunkt / Schichtbeginn?',true);
- if(!ort)return;
- add('Angekommen',{zielart:ort,ort});
+async function arrive(){
+  let ort=await chooseOrt('Wo ist dein Treffpunkt / Schichtbeginn?',true);
+  if(!ort)return;
+  add('Angekommen',{zielart:ort,ort});
 }
-function beginShift(){let r=prompt('Funktion:\n1 RbBau\n2 SAKRA\n3 BüP\n4 Sipo','');let m={'1':'RbBau','2':'SAKRA','3':'BüP','4':'Sipo'};if(!m[r])return;openRole(m[r]);add('Schichtbeginn',{role:m[r]})}
+async function beginShift(){
+  let r=await chooseOption('Funktion:',[
+    {value:'RbBau',label:'🚂 RbBau'},
+    {value:'SAKRA',label:'🦺 SAKRA'},
+    {value:'BüP',label:'🚧 BüP'},
+    {value:'Sipo',label:'🦺 Sipo'}
+  ]);
+  if(!r)return;
+  openRole(r);
+  add('Schichtbeginn',{role:r});
+}
 function openRole(r){role=r;document.getElementById('roleTitle').textContent=r==='RbBau'?'🚂 RbBau':r==='SAKRA'?'🦺 SAKRA':r==='BüP'?'🚧 BüP':'🦺 Sipo';setupRole();renderRole();show('role')}
 function setupRole(){let e=document.getElementById('setup');if(role==='Sipo')e.innerHTML='<label>Zugeordnete SAKRA (optional)</label><input id="sS" placeholder="Name"><button class="small" onclick="saveSetup()">Speichern</button>';else if(role==='SAKRA')e.innerHTML='<label>Sipo dabei (optional)</label><input id="sS"><label>Einsatzbereich</label><select id="sA" onchange="sakFields()"><option value="">Bitte wählen</option><option>Bahnhof</option><option>Strecke</option><option>Bahnübergang</option></select><div id="sF"></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else if(role==='BüP')e.innerHTML='<label>BÜ / Bezeichnung</label><input id="bN"><label>Strecke</label><input id="bS"><label>km</label><input id="bK"><div class="row"><div><label>Fahrdienst 1</label><input id="f1"></div><div><label>Fahrdienst 2 optional</label><input id="f2"></div></div><button class="small" onclick="saveSetup()">Grunddaten speichern</button>';else e.innerHTML='<div class="muted">Rangier- und Baustellendokumentation.</div>'}
 function sakFields(){let v=document.getElementById('sA').value,e=document.getElementById('sF');e.innerHTML=v==='Bahnhof'?'<label>Bahnhof</label><input id="sP">':v==='Strecke'?'<label>Strecke</label><input id="sP"><label>km</label><input id="sK">':v==='Bahnübergang'?'<label>BÜ</label><input id="sP"><label>Strecke</label><input id="sT"><label>km</label><input id="sK">':''}
 function saveSetup(){let n=now(),d=get(),x={kind:'setup',date:n.date,time:n.time,role};if(role==='Sipo')x.sakra=document.getElementById('sS').value;if(role==='SAKRA'){x.sipo=document.getElementById('sS').value;x.area=document.getElementById('sA').value;x.place=document.getElementById('sP')?.value||'';x.km=document.getElementById('sK')?.value||'';x.strecke=document.getElementById('sT')?.value||''}if(role==='BüP'){x.bue=document.getElementById('bN').value;x.strecke=document.getElementById('bS').value;x.km=document.getElementById('bK').value;x.fd1=document.getElementById('f1').value;x.fd2=document.getElementById('f2').value}d.push(x);save(d);renderRole()}
-function buepZugmeldung(){
- let d=get().filter(x=>x.kind==='setup'&&x.role==='BüP').slice(-1)[0]||{};
- let fd1=(d.fd1||'').trim();
- let fd2=(d.fd2||'').trim();
- if(!fd1||!fd2)return alert('Bitte zuerst Fahrdienst 1 und Fahrdienst 2 in den Grunddaten eintragen.');
- let v=prompt('Wer meldet die Zugmeldung?\n1 = Fahrdienst 1\n2 = Fahrdienst 2','1');
- if(v===null)return;
- let von,nach,meldung;
- if(v==='1'){
-   von=fd1; nach=fd2; meldung='Fahrdienst 1 meldet';
- }else if(v==='2'){
-   von=fd2; nach=fd1; meldung='Fahrdienst 2 meldet';
- }else return;
- add('Zugmeldung erhalten',{detail:meldung,von,nach,zugmeldungVon:meldung});
+async function buepZugmeldung(){
+  let d=get().filter(x=>x.kind==='setup'&&x.role==='BüP').slice(-1)[0]||{};
+  let fd1=(d.fd1||'').trim();
+  let fd2=(d.fd2||'').trim();
+  if(!fd1||!fd2)return alert('Bitte zuerst Fahrdienst 1 und Fahrdienst 2 in den Grunddaten eintragen.');
+  let v=await chooseOption('Wer meldet die Zugmeldung?',[
+    {value:'1',label:'📞 '+fd1},
+    {value:'2',label:'📞 '+fd2}
+  ]);
+  if(v===null)return;
+  let von,nach,meldung;
+  if(v==='1'){von=fd1;nach=fd2;meldung='Fahrdienst 1 meldet';}
+  else {von=fd2;nach=fd1;meldung='Fahrdienst 2 meldet';}
+  add('Zugmeldung erhalten',{detail:meldung,von,nach,zugmeldungVon:meldung});
 }
 function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else {
  let active=getActiveRangier();
@@ -966,148 +987,138 @@ function finishTrainAssembly(){
  const text='Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.';
  add('Zug fertig',{detail:text});
 }
-function recordIncident(){
- let v=prompt('Art des Vorfalls / Ereignisses:\n\n1 = Berührung / Anstoß\n2 = Gegenstand im Fahrweg\n3 = Gegenstand nicht profilfrei abgestellt\n4 = Beschädigung\n5 = Sonstiges','');
- if(v===null)return;
- let m={
-   '1':'Berührung / Anstoß',
-   '2':'Gegenstand im Fahrweg',
-   '3':'Gegenstand nicht profilfrei abgestellt',
-   '4':'Beschädigung'
- };
- let art='';
- if(v==='5'){
-   art=prompt('Sonstige Art des Vorfalls:','');
-   if(art===null||!art.trim())return;
-   art='Sonstiges – '+art.trim();
- }else if(m[v]) art=m[v];
- else return alert('Bitte eine gültige Auswahl treffen (1–5).');
-
- let passiert=prompt('Was ist passiert?\n\nFreies Textfeld:','');
- if(passiert===null||!passiert.trim())return;
-
- let km=prompt('Position / KM (optional):','');
- if(km===null)return;
-
- let massnahme=prompt('Maßnahme / Ergebnis\n\nFreies Textfeld:','');
- if(massnahme===null)return;
-
- let beteiligte=prompt('Beteiligte / Verursacher (optional):','');
- if(beteiligte===null)return;
-
- let detailParts=['Art: '+art,'Was ist passiert: '+passiert.trim()];
- if(km.trim())detailParts.push('Position / KM: '+km.trim());
- if(massnahme.trim())detailParts.push('Maßnahme / Ergebnis: '+massnahme.trim());
- if(beteiligte.trim())detailParts.push('Beteiligte / Verursacher: '+beteiligte.trim());
-
- add('Vorfall / Ereignis',{
-   detail:detailParts.join(' · '),
-   incidentType:art,
-   incidentDescription:passiert.trim(),
-   incidentKm:km.trim(),
-   incidentAction:massnahme.trim(),
-   incidentParties:beteiligte.trim()
- });
+async function recordIncident(){
+  let v=await chooseOption('Art des Vorfalls / Ereignisses:',[
+    {value:'1',label:'1 · Berührung / Anstoß'},
+    {value:'2',label:'2 · Gegenstand im Fahrweg'},
+    {value:'3',label:'3 · Gegenstand nicht profilfrei abgestellt'},
+    {value:'4',label:'4 · Beschädigung'},
+    {value:'5',label:'5 · Sonstiges'}
+  ]);
+  if(v===null)return;
+  let m={'1':'Berührung / Anstoß','2':'Gegenstand im Fahrweg','3':'Gegenstand nicht profilfrei abgestellt','4':'Beschädigung'};
+  let art='';
+  if(v==='5'){
+    art=prompt('Sonstige Art des Vorfalls:','');
+    if(art===null||!art.trim())return;
+    art='Sonstiges – '+art.trim();
+  }else if(m[v])art=m[v];
+  else return;
+  let passiert=prompt('Was ist passiert?\n\nFreies Textfeld:','');
+  if(passiert===null||!passiert.trim())return;
+  let km=prompt('Position / KM (optional):','');
+  if(km===null)return;
+  let massnahme=prompt('Maßnahme / Ergebnis\n\nFreies Textfeld:','');
+  if(massnahme===null)return;
+  let beteiligte=prompt('Beteiligte / Verursacher (optional):','');
+  if(beteiligte===null)return;
+  let detailParts=['Art: '+art,'Was ist passiert: '+passiert.trim()];
+  if(km.trim())detailParts.push('Position / KM: '+km.trim());
+  if(massnahme.trim())detailParts.push('Maßnahme / Ergebnis: '+massnahme.trim());
+  if(beteiligte.trim())detailParts.push('Beteiligte / Verursacher: '+beteiligte.trim());
+  add('Vorfall / Ereignis',{
+    detail:detailParts.join(' · '),
+    incidentType:art,
+    incidentDescription:passiert.trim(),
+    incidentKm:km.trim(),
+    incidentAction:massnahme.trim(),
+    incidentParties:beteiligte.trim()
+  });
 }
-function chooseRangierart(){
- let v=prompt('Rangierart:\n1 = Geschoben\n2 = Gezogen','1');
- if(v==='1')return 'geschoben';
- if(v==='2')return 'gezogen';
- return null;
+async function chooseRangierart(){
+  return await chooseOption('Rangierart:',[
+    {value:'geschoben',label:'🟢 Geschoben'},
+    {value:'gezogen',label:'🔵 Gezogen'}
+  ]);
 }
-function moveTfz(){
- let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
- if(v===null||!v.trim())return;
- let n=prompt('Nach / Ziel (KM, Gleis, Signal oder Ort):','');
- if(n===null||!n.trim())return;
- let fahrart=chooseRangierart();
- if(!fahrart)return;
- let active={von:v.trim(),nach:n.trim(),fahrart,rangierobjekt:'Tfz',startedAt:now()};
- setActiveRangier(active);
- add('Rangieren',{von:active.von,nach:active.nach,fahrart:active.fahrart,rangierobjekt:'Tfz'});
- renderRole();
+async function moveTfz(){
+  let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
+  if(v===null||!v.trim())return;
+  let n=prompt('Nach / Ziel (KM, Gleis, Signal oder Ort):','');
+  if(n===null||!n.trim())return;
+  let fahrart=await chooseRangierart();
+  if(!fahrart)return;
+  let active={von:v.trim(),nach:n.trim(),fahrart,rangierobjekt:'Tfz',startedAt:now()};
+  setActiveRangier(active);
+  add('Rangieren',{von:active.von,nach:active.nach,fahrart:active.fahrart,rangierobjekt:'Tfz'});
+  renderRole();
 }
-function moveNf(){
- let active=getActiveRangier();
- if(active && (active.rangierobjekt||'Tfz')==='Tfz'){
-   return alert('Es ist bereits ein Tfz-Rangiervorgang aktiv. Bitte diesen zuerst beenden.');
- }
-
- let lastNf=null;
- if(active && (active.rangierobjekt||'Tfz')==='Nf'){
-   lastNf=active;
- }else{
-   let d=get();
-   for(let i=d.length-1;i>=0;i--){
-     if(d[i].type==='Rangieren' && d[i].rangierobjekt==='Nf' && d[i].von && d[i].nach){
-       lastNf=d[i];
-       break;
-     }
-   }
- }
-
- // Sobald eine letzte Nf-Strecke vorhanden ist, direkt zwischen
- // gleicher Strecke und neuer Strecke wählen.
- if(lastNf){
-   let choice=prompt('🚃 Rangieren Nf\n\n1 = 🔁 Rangieren wiederholen – gleiche letzte Strecke\n2 = 🔀 Neue Strecke','1');
-   if(choice===null)return;
-   if(choice==='1'){
-     let next={
-       von:lastNf.nach,
-       nach:lastNf.von,
-       rangierobjekt:'Nf',
-       rangierweg:lastNf.rangierweg||lastNf.nach,
-       startedAt:active?.startedAt||now()
-     };
-     setActiveRangier(next);
-     add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
-     renderRole();
-     return;
-   }
-   if(choice!=='2')return;
-
-   // Bei einem aktiven Nf-Vorgang ist der bisherige Zielpunkt
-   // automatisch der Ausgangspunkt der neuen Strecke.
-   if(active){
-     let target=prompt('Neues Ziel (KM, Gleis, Signal oder Ort):',active.nach);
-     if(target===null||!target.trim())return;
-     target=target.trim();
-     let next={von:active.nach,nach:target,rangierobjekt:'Nf',rangierweg:target,startedAt:active.startedAt};
-     setActiveRangier(next);
-     add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
-     renderRole();
-     return;
-   }
- }
-
- let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
- if(v===null||!v.trim())return;
- let n=prompt('Nach / Rangierweg (KM, Gleis, Signal oder Ort):','');
- if(n===null||!n.trim())return;
- let nf={von:v.trim(),nach:n.trim(),rangierobjekt:'Nf',rangierweg:n.trim(),startedAt:now()};
- setActiveRangier(nf);
- add('Rangieren',{von:nf.von,nach:nf.nach,rangierobjekt:'Nf',rangierweg:nf.rangierweg});
- renderRole();
+async function moveNf(){
+  let active=getActiveRangier();
+  if(active && (active.rangierobjekt||'Tfz')==='Tfz'){
+    return alert('Es ist bereits ein Tfz-Rangiervorgang aktiv. Bitte diesen zuerst beenden.');
+  }
+  let lastNf=null;
+  if(active && (active.rangierobjekt||'Tfz')==='Nf'){
+    lastNf=active;
+  }else{
+    let d=get();
+    for(let i=d.length-1;i>=0;i--){
+      if(d[i].type==='Rangieren' && d[i].rangierobjekt==='Nf' && d[i].von && d[i].nach){
+        lastNf=d[i]; break;
+      }
+    }
+  }
+  if(lastNf){
+    let choice=await chooseOption('🚃 Rangieren Nf',[ 
+      {value:'1',label:'🔁 Rangieren wiederholen\ngleiche letzte Strecke'},
+      {value:'2',label:'🔀 Neue Strecke'}
+    ]);
+    if(choice===null)return;
+    if(choice==='1'){
+      let next={von:lastNf.nach,nach:lastNf.von,rangierobjekt:'Nf',rangierweg:lastNf.rangierweg||lastNf.nach,startedAt:active?.startedAt||now()};
+      setActiveRangier(next);
+      add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
+      renderRole();
+      return;
+    }
+    if(choice!=='2')return;
+    if(active){
+      let target=prompt('Neues Ziel (KM, Gleis, Signal oder Ort):',active.nach);
+      if(target===null||!target.trim())return;
+      target=target.trim();
+      let next={von:active.nach,nach:target,rangierobjekt:'Nf',rangierweg:target,startedAt:active.startedAt};
+      setActiveRangier(next);
+      add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
+      renderRole();
+      return;
+    }
+  }
+  let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
+  if(v===null||!v.trim())return;
+  let n=prompt('Nach / Rangierweg (KM, Gleis, Signal oder Ort):','');
+  if(n===null||!n.trim())return;
+  let nf={von:v.trim(),nach:n.trim(),rangierobjekt:'Nf',rangierweg:n.trim(),startedAt:now()};
+  setActiveRangier(nf);
+  add('Rangieren',{von:nf.von,nach:nf.nach,rangierobjekt:'Nf',rangierweg:nf.rangierweg});
+  renderRole();
 }
 function move(){moveTfz()}
-function holdMove(){
- let active=getActiveRangier();
- if(!active)return alert('Kein aktiver Rangiervorgang. Bitte zuerst Rangieren starten.');
- let haltKm=prompt('KM bei Halt (wenn bekannt):','');
- if(haltKm===null)return;
- haltKm=haltKm.trim().replace(',','.');
- if(haltKm && !/^\d+(?:\.\d+)?$/.test(haltKm))return alert('Bitte einen gültigen KM-Stand eingeben oder das Feld leer lassen.');
- let v=prompt('Halten / Warten:\n1 = Zug / Fahrzeug\n2 = Mitarbeiter im Gleisbereich\n3 = Warten auf Zustimmung\n4 = Störung\n5 = Sonstiges','');
- let m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};
- let detail='';
- if(v==='5'){let d=prompt('Sonstiges:','');if(d===null||!d.trim())return;detail='Sonstiges – '+d.trim();}
- else if(m[v])detail=m[v];
- else return;
- active.haltKm=haltKm||'';
- active.haltReason=detail;
- setActiveRangier(active);
- add('Halten / Warten',{detail:detail,rangierVorgang:active.von+' → '+active.nach,haltKm:haltKm||''});
- renderRole();
+async function holdMove(){
+  let active=getActiveRangier();
+  if(!active)return alert('Kein aktiver Rangiervorgang. Bitte zuerst Rangieren starten.');
+  let haltKm=prompt('KM bei Halt (wenn bekannt):','');
+  if(haltKm===null)return;
+  haltKm=haltKm.trim().replace(',','.');
+  if(haltKm && !/^\d+(?:\.\d+)?$/.test(haltKm))return alert('Bitte einen gültigen KM-Stand eingeben oder das Feld leer lassen.');
+  let v=await chooseOption('Halten / Warten:',[
+    {value:'1',label:'🚆 Zug / Fahrzeug'},
+    {value:'2',label:'👷 Mitarbeiter im Gleisbereich'},
+    {value:'3',label:'🚦 Warten auf Zustimmung'},
+    {value:'4',label:'⚠️ Störung'},
+    {value:'5',label:'✏️ Sonstiges'}
+  ]);
+  if(v===null)return;
+  let m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};
+  let detail='';
+  if(v==='5'){let d=prompt('Sonstiges:','');if(d===null||!d.trim())return;detail='Sonstiges – '+d.trim();}
+  else if(m[v])detail=m[v];
+  else return;
+  active.haltKm=haltKm||'';
+  active.haltReason=detail;
+  setActiveRangier(active);
+  add('Halten / Warten',{detail:detail,rangierVorgang:active.von+' → '+active.nach,haltKm:haltKm||''});
+  renderRole();
 }
 function changeDirection(){
  let active=getActiveRangier();
@@ -1137,24 +1148,30 @@ function changeDirection(){
  renderRole();
 }
 
-function continueMove(){
- let active=getActiveRangier();
- if(!active)return alert('Kein aktiver Rangiervorgang.');
- if((active.rangierobjekt||'Tfz')==='Nf')return repeatNf();
- let start=active.haltKm||active.nach;
- let choice=prompt('Rangiervorgang fortsetzen\nAktueller Halt: '+(active.haltKm?'km '+active.haltKm:'KM unbekannt')+'\nUrsprüngliches Ziel: '+active.nach+'\n\n1 = weiter zum bisherigen Ziel '+active.nach+'\n2 = neues Ziel eingeben','1');
- if(choice===null)return;
- let target;
- if(choice==='1')target=active.nach;
- else if(choice==='2'){
-   target=prompt('Neues Ziel (KM, Gleis, Signal oder Ort):',active.nach);
-   if(target===null||!target.trim())return;
-   target=target.trim();
- }else return;
- let next={von:start,nach:target,fahrart:active.fahrart,rangierobjekt:'Tfz',startedAt:active.startedAt};
- add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart,rangierobjekt:'Tfz'});
- setActiveRangier(next);
- renderRole();
+async function continueMove(){
+  let active=getActiveRangier();
+  if(!active)return alert('Kein aktiver Rangiervorgang.');
+  if((active.rangierobjekt||'Tfz')==='Nf')return repeatNf();
+  let start=active.haltKm||active.nach;
+  let choice=await chooseOption(
+    'Rangiervorgang fortsetzen\nAktueller Halt: '+(active.haltKm?'km '+active.haltKm:'KM unbekannt')+'\nUrsprüngliches Ziel: '+active.nach,
+    [
+      {value:'1',label:'▶️ Weiter zum bisherigen Ziel\n'+active.nach},
+      {value:'2',label:'🔀 Neues Ziel eingeben'}
+    ]
+  );
+  if(choice===null)return;
+  let target;
+  if(choice==='1')target=active.nach;
+  else if(choice==='2'){
+    target=prompt('Neues Ziel (KM, Gleis, Signal oder Ort):',active.nach);
+    if(target===null||!target.trim())return;
+    target=target.trim();
+  }else return;
+  let next={von:start,nach:target,fahrart:active.fahrart,rangierobjekt:'Tfz',startedAt:active.startedAt};
+  add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart,rangierobjekt:'Tfz'});
+  setActiveRangier(next);
+  renderRole();
 }
 function endMove(){
  let active=getActiveRangier();
@@ -1166,8 +1183,11 @@ function endMove(){
  setActiveRangier(null);
  renderRole();
 }
-function secureWagons(){
-  let v=prompt('Wagen gesichert:\n1 = Handbremse\n2 = Hemmschuhe','1');
+async function secureWagons(){
+  let v=await chooseOption('Wagen gesichert:',[
+    {value:'1',label:'🛑 Handbremse'},
+    {value:'2',label:'🛑 Hemmschuhe'}
+  ]);
   if(v==='1')add('Wagen gesichert',{detail:'Handbremse'});
   else if(v==='2')add('Wagen gesichert',{detail:'Hemmschuhe'});
 }
@@ -1176,18 +1196,25 @@ function parkVehicle(){
  if(gleis===null||!gleis.trim())return;
  add('Wagen / Lok abgestellt',{detail:'Gleis '+gleis.trim()});
 }
-function nfParkStatus(){
- let active=getActiveRangier();
- if(!active || (active.rangierobjekt||'Tfz')!=='Nf')return alert('Kein aktiver Nf-Rangiervorgang.');
- let v=prompt('Nf Abgestellt / Ausgegleist:\n1 = Abgestellt\n2 = Ausgegleist','1');
- if(v==='1')add('Nf abgestellt');
- else if(v==='2')add('Nf ausgegleist');
+async function nfParkStatus(){
+  let active=getActiveRangier();
+  if(!active || (active.rangierobjekt||'Tfz')!=='Nf')return alert('Kein aktiver Nf-Rangiervorgang.');
+  let v=await chooseOption('Nf Abgestellt / Ausgegleist:',[
+    {value:'1',label:'🅿️ Abgestellt'},
+    {value:'2',label:'⚠️ Ausgegleist'}
+  ]);
+  if(v==='1')add('Nf abgestellt');
+  else if(v==='2')add('Nf ausgegleist');
 }
-function loadUnload(){
- let v=prompt('Laden / Entladen wählen:\n1 = Nur beladen\n2 = Nur entladen\n3 = Beladen + Entladen','3');
- if(v==='1')add('Nur beladen');
- else if(v==='2')add('Nur entladen');
- else if(v==='3')add('Beladen + Entladen');
+async function loadUnload(){
+  let v=await chooseOption('Laden / Entladen wählen:',[
+    {value:'1',label:'📦 Nur beladen'},
+    {value:'2',label:'📤 Nur entladen'},
+    {value:'3',label:'📦📤 Beladen + Entladen'}
+  ]);
+  if(v==='1')add('Nur beladen');
+  else if(v==='2')add('Nur entladen');
+  else if(v==='3')add('Beladen + Entladen');
 }
 function getShiftEvents(){
  let all=load().filter(x=>x.kind==='event');
@@ -1359,8 +1386,8 @@ function selectPlanDay(date){selectedPlanDate=date;renderPlans();}
 // Tagesabschluss: konkreten Zielort übernehmen. Bei „Einsatzort“ wird
 // der für den heutigen Einsatz hinterlegte Ort gespeichert, nicht nur die
 // allgemeine Bezeichnung „Zweite Wohnung / Unterkunft“.
-function homeArrival(){
- let ziel=chooseOrt('Wo endest du?',true);
+async function homeArrival(){
+ let ziel=await chooseOrt('Wo endest du?',true);
  if(!ziel)return;
  let km=prompt('KM-Endstand bei Tagesabschluss:','');
  if(km===null||!km.trim())return;
