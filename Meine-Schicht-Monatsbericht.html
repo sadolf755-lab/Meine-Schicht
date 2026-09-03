@@ -362,7 +362,26 @@ async function showRows(){
     <span>🚗 ${Number(r[6]||0).toLocaleString('de-DE')} km · Arbeitszeit: ${r[15]!=='' ? Number(r[15]).toLocaleString('de-DE')+' Std.' : '–'}</span>
   </div>`).join('');
 }
-function backToApp(){window.location.assign(USE_DEV_DB?'./index-dev.html':'./index.html')}
+function backToApp(){
+  const ref=document.referrer||'';
+  let target='./index.html';
+
+  // Wenn der Monatsbericht aus der PC-DEV-Version geöffnet wurde,
+  // geht es wieder zu index-dev.html. Bei der Smartphone-Version
+  // geht es zu index.html. Der Referrer ist dabei zuverlässiger als
+  // der source-Parameter allein, weil beide Versionen die gleiche
+  // IndexedDB verwenden.
+  if(ref){
+    try{
+      const refUrl=new URL(ref,window.location.href);
+      if(refUrl.origin===window.location.origin && /(^|\/)index-dev\.html$/i.test(refUrl.pathname)){
+        target='./index-dev.html';
+      }
+    }catch(e){}
+  }
+
+  window.location.assign(target);
+}
 
 function xmlEscape(v){
   return String(v)
