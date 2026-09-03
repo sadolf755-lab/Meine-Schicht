@@ -865,6 +865,39 @@ async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item=
   if(duplicate)return;
   const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
+async function chooseOption(title, options){
+  return new Promise(resolve=>{
+    const old=document.getElementById('choiceBackdrop');
+    if(old)old.remove();
+    const backdrop=document.createElement('div');
+    backdrop.id='choiceBackdrop';
+    backdrop.className='choice-backdrop';
+    const box=document.createElement('div');
+    box.className='choice-box';
+    const h=document.createElement('div');
+    h.className='choice-title';
+    h.textContent=title;
+    const grid=document.createElement('div');
+    grid.className='choice-grid';
+    const finish=value=>{backdrop.remove();resolve(value)};
+    options.forEach(o=>{
+      const b=document.createElement('button');
+      b.className='choice-btn '+(o.className||'');
+      b.type='button';
+      b.textContent=o.label;
+      b.onclick=()=>finish(o.value);
+      grid.appendChild(b);
+    });
+    const cancel=document.createElement('button');
+    cancel.className='choice-cancel';
+    cancel.type='button';
+    cancel.textContent='Abbrechen';
+    cancel.onclick=()=>finish(null);
+    box.append(h,grid,cancel);
+    backdrop.appendChild(box);
+    document.body.appendChild(backdrop);
+  });
+}
 async function chooseOrt(promptText,includeEinsatzort=false){
   let s=getSettings();
   let haupt=s.hauptwohnung||'Hauptwohnung';
