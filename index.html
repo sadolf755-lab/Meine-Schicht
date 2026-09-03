@@ -809,7 +809,18 @@ function idbDelete(store,key){return openDB().then(db=>new Promise((resolve,reje
 let __data=[];let __settings={};let __activeRangier=null;const get=()=>__data;const save=d=>{__data=d;return Promise.all(d.map(x=>idbPut(x.kind==='plan'?PLANS_STORE:EVENTS_STORE,x)))};
 function getActiveRangier(){return __activeRangier}function setActiveRangier(x){__activeRangier=x||null;return x?idbPut(RANGIER_STORE,{id:'current',...x}):idbDelete(RANGIER_STORE,'current')}
 async function loadDevDB(){const [events,plans,settings,rangier]=await Promise.all([idbAll(EVENTS_STORE),idbAll(PLANS_STORE),idbAll(SETTINGS_STORE),idbAll(RANGIER_STORE)]);__data=[...events,...plans];__settings=settings.find(x=>x.id==='personal')||{};__activeRangier=rangier.find(x=>x.id==='current')||null}
-let devDBReady=openDB().then(loadDevDB).catch(e=>console.error('IndexedDB',e));const pad=n=>String(n).padStart(2,'0');
+let devDBReady=openDB().then(async()=>{
+ try{
+   await loadDevDB();
+   const result=await removeExactDuplicates();
+   if(result.removedEvents||result.removedPlans){
+     console.log('Identische Doppelungen beim Start entfernt:',result);
+   }
+ }catch(e){
+   console.error('IndexedDB',e);
+ }
+ return true;
+});const pad=n=>String(n).padStart(2,'0');
 function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
@@ -1218,20 +1229,64 @@ async function deleteEvent(id){
    alert('Der Eintrag konnte nicht gelöscht werden.');
  }
 }
-function createPlans(){
+function duplicateSignature(obj){
+ if(!obj||typeof obj!=='object')return '';
+ const clean={};
+ Object.keys(obj).filter(k=>k!=='id').sort().forEach(k=>clean[k]=obj[k]);
+ return JSON.stringify(clean);
+}
+
+async function removeExactDuplicates(){
+ const [events,plans]=await Promise.all([idbAll(EVENTS_STORE),idbAll(PLANS_STORE)]);
+ const seenEvents=new Set(),seenPlans=new Set();
+ const deleteEvents=[],deletePlans=[];
+
+ for(const item of events){
+   const sig=duplicateSignature(item);
+   if(seenEvents.has(sig))deleteEvents.push(item.id);
+   else seenEvents.add(sig);
+ }
+ for(const item of plans){
+   const sig=duplicateSignature(item);
+   if(seenPlans.has(sig))deletePlans.push(item.id);
+   else seenPlans.add(sig);
+ }
+
+ if(deleteEvents.length||deletePlans.length){
+   await Promise.all([
+     ...deleteEvents.map(id=>idbDelete(EVENTS_STORE,id)),
+     ...deletePlans.map(id=>idbDelete(PLANS_STORE,id))
+   ]);
+   await loadDevDB();
+ }
+ return {removedEvents:deleteEvents.length,removedPlans:deletePlans.length};
+}
+
+async function createPlans(){
  let from=document.getElementById('pFrom').value,to=document.getElementById('pTo').value;
  if(!from||!to||to<from)return alert('Bitte einen gültigen Zeitraum eingeben.');
  let tf=document.getElementById('pTimeFrom').value,tt=document.getElementById('pTimeTo').value;
  if(!tf||!tt)return alert('Bitte Von-/Bis-Zeit eintragen.');
  let roleName=document.getElementById('pRole').value,ort=document.getElementById('pOrt').value.trim(),auftraggeber=document.getElementById('pAuftraggeber').value.trim();
  let selected=[...document.querySelectorAll('#planForm input[type=checkbox]:checked')].map(x=>Number(x.value));
- let d=get(),id=Date.now();
+
+ await devDBReady;
+ const existing=await idbAll(PLANS_STORE);
+ const signatures=new Set(existing.map(duplicateSignature));
+ let d=get(),id=Date.now(),added=0,skipped=0;
+
  for(let cur=new Date(from+'T12:00:00');cur<=new Date(to+'T12:00:00');cur.setDate(cur.getDate()+1)){
    if(!selected.includes(cur.getDay()))continue;
    let date=`${pad(cur.getDate())}.${pad(cur.getMonth()+1)}.${cur.getFullYear()}`;
-   d.push({kind:'plan',id:id++,date,time:`${tf}-${tt}`,role:roleName,ort,auftraggeber});
+   const plan={kind:'plan',id:id++,date,time:`${tf}-${tt}`,role:roleName,ort,auftraggeber};
+   const sig=duplicateSignature(plan);
+   if(signatures.has(sig)){skipped++;continue;}
+   signatures.add(sig);
+   d.push(plan);
+   added++;
  }
  save(d);document.getElementById('planForm').classList.add('hidden');renderPlans();
+ if(skipped)alert('Einsätze gespeichert: '+added+'\nBereits vorhandene identische Einsätze übersprungen: '+skipped);
 }
 function editPlan(id){
  let d=get(),p=d.find(x=>x.id===id);if(!p)return;
@@ -1240,7 +1295,18 @@ function editPlan(id){
  p.auftraggeber=prompt('Auftraggeber:',p.auftraggeber||'')||'';
  save(d);renderPlans()
 }
-function delPlan(id){if(confirm('Einsatz löschen?')){save(get().filter(x=>x.id!==id));renderPlans()}}
+async function delPlan(id){
+ if(!confirm('Einsatz löschen?'))return;
+ try{
+   await idbDelete(PLANS_STORE,id);
+   __data=__data.filter(x=>!(x&&x.kind==='plan'&&Number(x.id)===Number(id)));
+   render();
+   renderPlans();
+ }catch(e){
+   console.error('Fehler beim Löschen des Einsatzes',e);
+   alert('Der Einsatz konnte nicht gelöscht werden.');
+ }
+}
 let selectedPlanDate='';
 function planWeekInfo(){
  let d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+planWeekOffset*7);
