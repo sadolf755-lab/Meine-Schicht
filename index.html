@@ -695,6 +695,26 @@ input::placeholder{color:#6f8798}
 .choice-cancel{margin-top:10px;width:100%;background:#111b24!important;color:#9eb0c1!important}
 @media(max-width:600px){.choice-backdrop{padding:12px}.choice-box{padding:14px}.choice-title{font-size:18px}.choice-grid{grid-template-columns:1fr 1fr}.choice-btn{min-height:58px!important;font-size:16px!important}}
 </style>
+<style>
+.quick-help-card{padding:10px!important}
+.quick-help-btn{width:100%!important;display:flex!important;align-items:center!important;gap:12px!important;justify-content:flex-start!important;text-align:left!important;margin:0 0 8px!important;padding:13px 14px!important;border-radius:15px!important;background:linear-gradient(180deg,#081c2b,#06131f)!important;color:#fff!important;border:1px solid #1d4b67!important;min-height:62px!important}
+.quick-help-btn:last-child{margin-bottom:0!important}
+.quick-help-btn>span{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.quick-help-btn>span b{font-size:16px}.quick-help-btn>span small{font-size:11px;color:#91a6b8;font-weight:600;line-height:1.25}
+.quick-help-btn>b:last-child{font-size:27px;color:#8db8d0}
+.nothalt-help{border-color:#a8323b!important;box-shadow:inset 0 0 18px #ff3c3210}
+.alphabet-help{border-color:#277aa4!important;box-shadow:inset 0 0 18px #29a8ff10}
+.quick-help-panel{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box}
+.quick-help-box{width:min(620px,100%);max-height:90vh;overflow:auto;background:linear-gradient(180deg,#071b2b,#06121d);border:1px solid #1b5b7d;border-radius:20px;padding:18px;box-shadow:0 18px 50px #000c;box-sizing:border-box}
+.quick-help-box h3{margin:0 0 12px;color:#fff;font-size:21px}
+.quick-help-box .help-note{color:#91a6b8;font-size:12px;line-height:1.35;margin:0 0 14px}
+.help-wording{background:#06101a;border:1px solid #204a64;border-radius:13px;padding:13px;color:#f5f8fb;font-size:16px;line-height:1.5;white-space:pre-line}
+.alphabet-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px}
+.alphabet-item{background:#0a2030;border:1px solid #1d4b67;border-radius:9px;padding:9px 10px;font-weight:700;color:#fff}
+.quick-help-close{width:100%;margin-top:12px;background:#111b24!important;color:#c7d2db!important}
+@media(max-width:600px){.quick-help-btn{min-height:58px!important;padding:11px 12px!important}.quick-help-btn>span b{font-size:15px}.quick-help-btn>span small{font-size:10px}.quick-help-box{padding:14px;border-radius:18px}}
+
+</style>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -720,8 +740,6 @@ input::placeholder{color:#6f8798}
   <div class="app-title"><h1>MEINE SCHICHT</h1><div class="sub">Wenig Eingaben –<br>möglichst vollständige Dokumentation.</div></div>
 </div>
 <section id="home">
-  <button class="wide cockpit-wide" onclick="show('plan')">📅 <b>Einsätze KW <span id="kw"></span></b><span class="chev">›</span></button>
-
   <div class="status-panel">
     <div class="status-week">
       <div class="status-kicker">KW <span id="statusKw"></span></div>
@@ -739,13 +757,7 @@ input::placeholder{color:#6f8798}
     </div>
   </div>
 
-  <div class="section-label">AUFGABENBEREICHE</div>
-  <div class="card role-card"><div class="grid role-grid">
-    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
-    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
-    <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
-    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
-  </div></div>
+  <button class="wide cockpit-wide" onclick="show('plan')">📅 <b>Einsätze KW <span id="kw"></span></b><span class="chev">›</span></button>
 
   <div class="section-label section-line">FAHRT &amp; SCHICHT <span></span></div>
   <div class="fahrt-cockpit">
@@ -757,22 +769,40 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
-<button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
+    <button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
   </div>
-<div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
-<div class="card settings cockpit-settings">
-  <button class="small" onclick="openSettings()">⚙️ Meine Daten</button>
-  <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button>
-  <button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button>
-  <button class="small monthly-report-btn" onclick="openMonthlyReport()">📊 Monatsbericht <span>›</span></button>
-</div>
-<nav class="bottom-nav" aria-label="Hauptnavigation">
-  <button class="active" onclick="show('home')"><span>⌂</span>Start</button>
-  <button onclick="document.getElementById('today').scrollIntoView({behavior:'smooth'})"><span>▣</span>Heute</button>
-  <button onclick="show('plan')"><span>🚂</span>Einsätze</button>
-  <button onclick="exportPDF()"><span>▤</span>Berichte</button>
-  <button onclick="openSettings()"><span>⚙</span>Einstellungen</button>
-</nav></section>
+
+  <div class="section-label">AUFGABENBEREICHE</div>
+  <div class="card role-card"><div class="grid role-grid">
+    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
+    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
+    <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
+    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
+  </div></div>
+
+  <div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
+  <div class="card quick-help-card">
+    <button class="quick-help-btn nothalt-help" onclick="showNothaltHelp()">🚨 <span><b>Nothaltauftrag</b><small>Schneller Abruf des Wortlauts</small></span><b>›</b></button>
+    <button class="quick-help-btn alphabet-help" onclick="showAlphabetHelp()">🔤 <span><b>Buchstabiertafel</b><small>Signale, Weichen und Kennungen eindeutig buchstabieren</small></span><b>›</b></button>
+  </div>
+
+  <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
+
+  <div class="card settings cockpit-settings">
+    <button class="small" onclick="openSettings()">⚙️ Meine Daten</button>
+    <button class="small" onclick="exportPDF()">📄 PDF-Bericht</button>
+    <button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button>
+    <button class="small monthly-report-btn" onclick="openMonthlyReport()">📊 Monatsbericht <span>›</span></button>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Hauptnavigation">
+    <button class="active" onclick="show('home')"><span>⌂</span>Start</button>
+    <button onclick="document.getElementById('today').scrollIntoView({behavior:'smooth'})"><span>▣</span>Heute</button>
+    <button onclick="show('plan')"><span>🚂</span>Einsätze</button>
+    <button onclick="exportPDF()"><span>▤</span>Berichte</button>
+    <button onclick="openSettings()"><span>⚙</span>Einstellungen</button>
+  </nav>
+</section>
 <section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
 <div class="card">
 <div class="kw-header">
@@ -975,7 +1005,7 @@ async function buepZugmeldung(){
   else {von=fd2;nach=fd1;meldung='Fahrdienst 2 meldet';}
   add('Zugmeldung erhalten',{detail:meldung,von,nach,zugmeldungVon:meldung});
 }
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else {
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else {
  let active=getActiveRangier();
  let r;
  if(active){
@@ -1002,6 +1032,8 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
   : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
+ '<button class="small" onclick="recordSpecial()">📝 Besonderheiten</button>'+
+ '<button class="small danger" onclick="recordEmergency()">🚨 Notfall</button>'+
  '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div>';
  if(active){
    let mode=active.rangierobjekt||'Tfz';
@@ -1011,6 +1043,56 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  }
  renderEvents()}
 }
+
+async function recordSpecial(){
+  let text=prompt('📝 Besonderheit erfassen\n\nWas ist im Bahnbetrieb aktuell wichtig?','');
+  if(text===null||!text.trim())return;
+  add('Besonderheit',{
+    detail:text.trim(),
+    specialText:text.trim()
+  });
+}
+
+async function recordEmergency(){
+  let v=await chooseOption('🚨 Notfall – Art auswählen:',[
+    {value:'nothalt',label:'🛑 Nothaltauftrag'},
+    {value:'notruf',label:'📞 Notruf / Gefahrenmeldung'},
+    {value:'sonstiger',label:'⚠️ Sonstiger Notfall'}
+  ]);
+  if(v===null)return;
+  let labels={
+    nothalt:'Nothaltauftrag abgegeben',
+    notruf:'Notruf / Gefahrenmeldung',
+    sonstiger:'Sonstiger Notfall'
+  };
+  let text=prompt('🚨 '+labels[v]+'\n\nWas ist passiert / was wurde veranlasst?','');
+  if(text===null||!text.trim())return;
+  add('Notfall',{
+    detail:labels[v]+' – '+text.trim(),
+    emergencyType:labels[v],
+    emergencyText:text.trim()
+  });
+}
+
+function showHelpPanel(title,body){
+ const old=document.getElementById('quickHelpPanel');if(old)old.remove();
+ const p=document.createElement('div');p.id='quickHelpPanel';p.className='quick-help-panel';
+ p.innerHTML='<div class="quick-help-box"><h3>'+esc(title)+'</h3>'+body+'<button class="quick-help-close" onclick="document.getElementById(\'quickHelpPanel\').remove()">← Schließen</button></div>';
+ p.addEventListener('click',e=>{if(e.target===p)p.remove()});document.body.appendChild(p);
+}
+
+function showNothaltHelp(){
+ const body='<p class="help-note">Reine Nachschlagehilfe – keine Dokumentation. Im konkreten Fall immer die gültigen örtlichen und betrieblichen Vorgaben beachten.</p>'+
+ '<div class="help-wording"><b>Mayday, mayday, mayday!</b>\n\nAlle Fahrten zwischen [Ort / Zugmeldestelle] und [Ort / Zugmeldestelle] sofort anhalten!\n\nIch wiederhole: Mayday, mayday, mayday!\nAlle Fahrten zwischen [Ort / Zugmeldestelle] und [Ort / Zugmeldestelle] sofort anhalten!</div>';
+ showHelpPanel('🚨 Nothaltauftrag',body);
+}
+
+function showAlphabetHelp(){
+ const letters=[['A','Alpha'],['B','Bravo'],['C','Charlie'],['D','Delta'],['E','Echo'],['F','Foxtrot'],['G','Golf'],['H','Hotel'],['I','India'],['J','Juliett'],['K','Kilo'],['L','Lima'],['M','Mike'],['N','November'],['O','Oscar'],['P','Papa'],['Q','Quebec'],['R','Romeo'],['S','Sierra'],['T','Tango'],['U','Uniform'],['V','Victor'],['W','Whiskey'],['X','X-ray'],['Y','Yankee'],['Z','Zulu']];
+ const grid=letters.map(x=>'<div class="alphabet-item"><b>'+x[0]+'</b> – '+x[1]+'</div>').join('');
+ showHelpPanel('🔤 Buchstabiertafel','<p class="help-note">Zum eindeutigen Buchstabieren von Signal-, Weichen- und anderen Kennungen.</p><div class="alphabet-grid">'+grid+'</div>');
+}
+
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
 function startTrainAssembly(){
  let ok=confirm('🔄 Zug neu zusammenstellen\n\nRangierarbeiten zur Bildung des Zuges beginnen.\n\nWenn die Zugbildung abgeschlossen ist, bitte ✅ Zug fertig drücken.');
