@@ -715,6 +715,13 @@ input::placeholder{color:#6f8798}
 @media(max-width:600px){.quick-help-btn{min-height:58px!important;padding:11px 12px!important}.quick-help-btn>span b{font-size:15px}.quick-help-btn>span small{font-size:10px}.quick-help-box{padding:14px;border-radius:18px}}
 
 </style>
+<style id="documentation-ui">
+.doc-toggle{width:100%!important;margin-top:10px!important;display:flex!important;align-items:center!important;gap:10px!important;background:linear-gradient(180deg,#082239,#061722)!important;color:#bfe8ff!important;border:1px solid #1f8fca!important;border-radius:14px!important;padding:13px 14px!important;font-size:16px!important}
+.doc-toggle b{margin-left:auto;font-size:25px;color:#8db8d0}
+.doc-panel{margin-top:8px;padding:10px;border:1px solid #173f57;border-radius:14px;background:#06121d}
+.doc-hint{margin:0 2px 9px;color:#91a6b8;font-size:12px;line-height:1.35}
+.doc-panel .grid{gap:7px}.doc-panel button{padding:10px 8px!important;font-size:13px!important}
+</style>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -772,13 +779,17 @@ input::placeholder{color:#6f8798}
     <button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
   </div>
 
-  <div class="section-label">AUFGABENBEREICHE</div>
-  <div class="card role-card"><div class="grid role-grid">
-    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
-    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
-    <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
-    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
-  </div></div>
+  <button class="doc-toggle home-doc-toggle" onclick="toggleHomeDocumentation()">📝 <span>Dokumentation erfassen</span><b id="homeDocChevron">›</b></button>
+  <div id="homeDocumentationPanel" class="doc-panel" style="display:none">
+    <div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div>
+    <div class="section-label">AUFGABENBEREICHE</div>
+    <div class="card role-card"><div class="grid role-grid">
+      <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
+      <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
+      <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
+      <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
+    </div></div>
+  </div>
 
   <div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
   <div class="card quick-help-card">
@@ -842,7 +853,7 @@ input::placeholder{color:#6f8798}
 </div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
-const DB_NAME='MeineSchichtDB_DEV';const DB_VERSION=1;let dbPromise=null;const EVENTS_STORE='events',PLANS_STORE='plans',SETTINGS_STORE='settings',RANGIER_STORE='activeRangier';let role='';let planWeekOffset=0;
+const DB_NAME='MeineSchichtDB_DEV';const DB_VERSION=1;let dbPromise=null;const EVENTS_STORE='events',PLANS_STORE='plans',SETTINGS_STORE='settings',RANGIER_STORE='activeRangier';let role='';let planWeekOffset=0;let homeDocumentationOpen=false;
 function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(EVENTS_STORE)){const st=db.createObjectStore(EVENTS_STORE,{keyPath:'id',autoIncrement:true});st.createIndex('date','date');st.createIndex('type','type');st.createIndex('role','role')}if(!db.objectStoreNames.contains(PLANS_STORE)){const st=db.createObjectStore(PLANS_STORE,{keyPath:'id',autoIncrement:true});st.createIndex('date','date');st.createIndex('role','role')}if(!db.objectStoreNames.contains(SETTINGS_STORE))db.createObjectStore(SETTINGS_STORE,{keyPath:'id'});if(!db.objectStoreNames.contains(RANGIER_STORE))db.createObjectStore(RANGIER_STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});return dbPromise}
 function idbAll(store){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readonly').objectStore(store).getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))}
 function idbPut(store,obj){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readwrite').objectStore(store).put(obj);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))}
@@ -866,6 +877,13 @@ function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMont
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
 function show(id){['home','plan','role','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
+function toggleHomeDocumentation(){
+  homeDocumentationOpen=!homeDocumentationOpen;
+  const p=document.getElementById('homeDocumentationPanel');
+  const c=document.getElementById('homeDocChevron');
+  if(p)p.style.display=homeDocumentationOpen?'block':'none';
+  if(c)c.textContent=homeDocumentationOpen?'⌃':'›';
+}
 const SETTINGS_KEY='personal';
 function getSettings(){return __settings}
 function openSettings(){loadSettings();show('settings')}
@@ -896,6 +914,165 @@ async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item=
   if(duplicate)return;
   const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
+async function addAtTime(type,date,time,extra={}){
+  await devDBReady;
+  const item={kind:'event',date,time,type,role,nachtrag:true,...extra};
+  const d=get();
+  const duplicate=d.some(x=>x&&x.kind==='event'&&x.date===item.date&&x.time===item.time&&x.type===item.type&&x.role===item.role);
+  if(duplicate)return alert('Dieser Eintrag ist bereits vorhanden.');
+  const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole();
+}
+
+async function addRetroactive(){
+  await devDBReady;
+  const n=now();
+  let date=prompt('🕒 Nachtrag – Datum (TT.MM.JJJJ):',n.date);
+  if(date===null||!date.trim())return;
+  date=date.trim();
+  if(!/^\d{2}\.\d{2}\.\d{4}$/.test(date))return alert('Bitte das Datum im Format TT.MM.JJJJ eingeben.');
+  let time=prompt('🕒 Nachtrag – Uhrzeit (HH:MM):',n.time);
+  if(time===null||!time.trim())return;
+  time=time.trim();
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return alert('Bitte die Uhrzeit im Format HH:MM eingeben.');
+
+  const options=[];
+  if(role==='RbBau'){
+    options.push(
+      {value:'rangieren-tfz',label:'🚂 Rangieren Tfz'},
+      {value:'rangieren-nf',label:'🚃 Rangieren Nf'},
+      {value:'halten',label:'⏸ Halten / Warten'},
+      {value:'ankuppeln',label:'🔗 Ankuppeln'},
+      {value:'abkuppeln',label:'🔓 Abkuppeln'},
+      {value:'laden',label:'📦 Laden / Entladen'},
+      {value:'zug-neu',label:'🔄 Zug neu zusammenstellen'},
+      {value:'wagenliste',label:'📋 Wagenliste'},
+      {value:'bremsprobe',label:'🛑 Bremsprobe'},
+      {value:'zug-fertig',label:'✅ Zug fertig'},
+      {value:'parken',label:'🅿️ Wagen / Lok abgestellt'},
+      {value:'sichern',label:'🚂 Wagen gesichert'},
+      {value:'stoerung',label:'⚠️ Störung'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'},
+      {value:'vorfall',label:'⚠️ Vorfall / Ereignis'}
+    );
+  }else if(role==='SAKRA'){
+    options.push(
+      {value:'sperrgespraech',label:'🗣️ Sperrgespräch geführt'},
+      {value:'sperrung-erhalten',label:'🔒 Sperrung erhalten'},
+      {value:'sperrung-aufgehoben',label:'🔓 Sperrung aufgehoben'},
+      {value:'nicht-erhalten',label:'❌ Sperrung nicht erhalten'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'}
+    );
+  }else if(role==='BüP'){
+    options.push(
+      {value:'zugmeldung',label:'📞 Zugmeldung / Anruf erhalten'},
+      {value:'sicherung',label:'🛑 Bahnübergang gesichert'},
+      {value:'zug-vorbei',label:'🚆 Zug vorbeigefahren'},
+      {value:'aufgehoben',label:'✅ Sicherung aufgehoben'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'}
+    );
+  }else{
+    options.push(
+      {value:'beginn',label:'▶️ Schichtbeginn'},
+      {value:'ende',label:'🛑 Schichtende'},
+      {value:'anruf',label:'📞 Anruf / Mitteilung erhalten'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'}
+    );
+  }
+
+  const choice=await chooseOption('🕒 Nachtrag – Eintrag auswählen:',options);
+  if(choice===null)return;
+
+  if(choice==='rangieren-tfz')return addAtTime('Rangieren',date,time,{rangierobjekt:'Tfz',nachtrag:true});
+  if(choice==='rangieren-nf')return addAtTime('Rangieren',date,time,{rangierobjekt:'Nf',nachtrag:true});
+  if(choice==='ankuppeln')return addAtTime('Ankuppeln',date,time);
+  if(choice==='abkuppeln')return addAtTime('Abkuppeln',date,time);
+  if(choice==='wagenliste')return addAtTime('Wagenliste erstellt',date,time);
+  if(choice==='bremsprobe')return addAtTime('Bremsprobe durchgeführt',date,time);
+  if(choice==='zug-neu')return addAtTime('Zug neu zusammenstellen',date,time);
+  if(choice==='zug-fertig')return addAtTime('Zug fertig',date,time,{detail:'Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.'});
+  if(choice==='parken')return addAtTime('Wagen / Lok abgestellt',date,time);
+  if(choice==='sichern')return addAtTime('Wagen gesichert',date,time);
+  if(choice==='stoerung')return addAtTime('Störung',date,time);
+  if(choice==='sperrgespraech')return addAtTime('Sperrgespräch geführt',date,time);
+  if(choice==='sperrung-aufgehoben')return addAtTime('Sperrung aufgehoben',date,time);
+  if(choice==='nicht-erhalten'){
+    const v=prompt('Grund für „Sperrung nicht erhalten“:','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Sperrung nicht erhalten',date,time,{detail:v.trim()});
+  }
+  if(choice==='sperrung-erhalten'){
+    const v=prompt('Gleis / Streckenabschnitt:','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Sperrung erhalten',date,time,{detail:v.trim()});
+  }
+  if(choice==='zug-vorbei')return addAtTime('Zug vorbeigefahren',date,time);
+  if(choice==='aufgehoben')return addAtTime('Sicherungsmaßnahme aufgehoben',date,time);
+  if(choice==='sicherung')return addAtTime('Sicherungsmaßnahme durchgeführt',date,time);
+  if(choice==='zugmeldung'){
+    let d=get().filter(x=>x.kind==='setup'&&x.role==='BüP').slice(-1)[0]||{};
+    let fd1=(d.fd1||'').trim(),fd2=(d.fd2||'').trim();
+    if(!fd1||!fd2)return alert('Bitte zuerst Fahrdienst 1 und Fahrdienst 2 in den Grunddaten eintragen.');
+    let v=await chooseOption('Wer hat angerufen / gemeldet?',[
+      {value:'1',label:'📞 '+fd1},{value:'2',label:'📞 '+fd2}
+    ]);
+    if(v===null)return;
+    const von=v==='1'?fd1:fd2,nach=v==='1'?fd2:fd1;
+    return addAtTime('Zugmeldung erhalten',date,time,{detail:(v==='1'?'Fahrdienst 1 meldet':'Fahrdienst 2 meldet'),von,nach,zugmeldungVon:(v==='1'?'Fahrdienst 1 meldet':'Fahrdienst 2 meldet')});
+  }
+  if(choice==='laden'){
+    const v=await chooseOption('Laden / Entladen nachtragen:',[
+      {value:'1',label:'📦 Nur beladen'},{value:'2',label:'📤 Nur entladen'},{value:'3',label:'📦📤 Beladen + Entladen'}
+    ]);
+    if(v==='1')return addAtTime('Nur beladen',date,time);
+    if(v==='2')return addAtTime('Nur entladen',date,time);
+    if(v==='3')return addAtTime('Beladen + Entladen',date,time);
+    return;
+  }
+  if(choice==='halten'){
+    const v=await chooseOption('Halten / Warten nachtragen:',[
+      {value:'1',label:'🚆 Zug / Fahrzeug'},{value:'2',label:'👷 Mitarbeiter im Gleisbereich'},{value:'3',label:'🚦 Warten auf Zustimmung'},{value:'4',label:'⚠️ Störung'},{value:'5',label:'✏️ Sonstiges'}
+    ]);
+    if(v===null)return;
+    const m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};
+    let detail='';
+    if(v==='5'){detail=prompt('Sonstiges:','');if(detail===null||!detail.trim())return;detail='Sonstiges – '+detail.trim();}
+    else detail=m[v];
+    return addAtTime('Halten / Warten',date,time,{grund:detail,detail});
+  }
+  if(choice==='beginn')return addAtTime('Sipo Schichtbeginn',date,time);
+  if(choice==='ende')return addAtTime('Sipo Schichtende',date,time);
+  if(choice==='anruf'){
+    const v=prompt('Was wurde telefonisch mitgeteilt?','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Anruf / Mitteilung erhalten',date,time,{detail:v.trim()});
+  }
+  if(choice==='besonderheit'){
+    const v=prompt('Was war die Besonderheit?','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Besonderheit',date,time,{detail:v.trim(),specialText:v.trim()});
+  }
+  if(choice==='notfall'){
+    const v=await chooseOption('🚨 Notfall – Art:',[
+      {value:'nothalt',label:'🛑 Nothaltauftrag'},{value:'notruf',label:'📞 Notruf / Gefahrenmeldung'},{value:'sonstiger',label:'⚠️ Sonstiger Notfall'}
+    ]);
+    if(v===null)return;
+    const labels={nothalt:'Nothaltauftrag abgegeben',notruf:'Notruf / Gefahrenmeldung',sonstiger:'Sonstiger Notfall'};
+    const text=prompt('Was ist passiert / was wurde veranlasst?','');
+    if(text===null||!text.trim())return;
+    return addAtTime('Notfall',date,time,{detail:labels[v]+' – '+text.trim(),emergencyType:labels[v],emergencyText:text.trim()});
+  }
+  if(choice==='vorfall'){
+    const text=prompt('Was ist passiert?','');
+    if(text===null||!text.trim())return;
+    return addAtTime('Vorfall / Ereignis',date,time,{detail:text.trim()});
+  }
+}
+
+
 function chooseOption(title, options){
   return new Promise(resolve=>{
     const old=document.getElementById('choiceBackdrop');
@@ -1005,7 +1182,10 @@ async function buepZugmeldung(){
   else {von=fd2;nach=fd1;meldung='Fahrdienst 2 meldet';}
   add('Zugmeldung erhalten',{detail:meldung,von,nach,zugmeldungVon:meldung});
 }
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else {
+let documentationOpen=false;
+function toggleDocumentation(){documentationOpen=!documentationOpen;renderRole();}
+
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else {
  let active=getActiveRangier();
  let r;
  if(active){
@@ -1031,10 +1211,13 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
   ? '<button class="small" onclick="nfParkStatus()">🅿️ Nf Abgestellt / Ausgegleist</button>'
   : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
+ '<button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+
+ (documentationOpen ? '<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid">'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
  '<button class="small" onclick="recordSpecial()">📝 Besonderheiten</button>'+
  '<button class="small danger" onclick="recordEmergency()">🚨 Notfall</button>'+
- '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div>';
+ '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div></div>' : '')+
+ '</div>';
  if(active){
    let mode=active.rangierobjekt||'Tfz';
    let info=mode==='Nf'?'Nf':'Tfz · '+(active.fahrart||'');
@@ -1042,36 +1225,6 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
    else e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(info)+'</div>';
  }
  renderEvents()}
-}
-
-async function recordSpecial(){
-  let text=prompt('📝 Besonderheit erfassen\n\nWas ist im Bahnbetrieb aktuell wichtig?','');
-  if(text===null||!text.trim())return;
-  add('Besonderheit',{
-    detail:text.trim(),
-    specialText:text.trim()
-  });
-}
-
-async function recordEmergency(){
-  let v=await chooseOption('🚨 Notfall – Art auswählen:',[
-    {value:'nothalt',label:'🛑 Nothaltauftrag'},
-    {value:'notruf',label:'📞 Notruf / Gefahrenmeldung'},
-    {value:'sonstiger',label:'⚠️ Sonstiger Notfall'}
-  ]);
-  if(v===null)return;
-  let labels={
-    nothalt:'Nothaltauftrag abgegeben',
-    notruf:'Notruf / Gefahrenmeldung',
-    sonstiger:'Sonstiger Notfall'
-  };
-  let text=prompt('🚨 '+labels[v]+'\n\nWas ist passiert / was wurde veranlasst?','');
-  if(text===null||!text.trim())return;
-  add('Notfall',{
-    detail:labels[v]+' – '+text.trim(),
-    emergencyType:labels[v],
-    emergencyText:text.trim()
-  });
 }
 
 function showHelpPanel(title,body){
